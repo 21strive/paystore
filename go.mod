@@ -1,4 +1,4 @@
-module tinywallet
+module paystore
 
 go 1.23
 
