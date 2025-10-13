@@ -10,7 +10,7 @@ import (
 )
 
 type Payment struct {
-	*redifu.SQLItem
+	*redifu.Record
 	Amount               int64  `json:"amount"`
 	BalanceBeforePayment int64  `json:"balanceBeforePayment"`
 	BalanceAfterPayment  int64  `json:"balanceAfterPayment"`

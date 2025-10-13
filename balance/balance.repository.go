@@ -1,21 +1,25 @@
 package balance
 
-import "github.com/21strive/redifu"
+import (
+	"database/sql"
+	"github.com/21strive/redifu"
+)
 
 type Repository struct {
-	base     *redifu.Base[Account]
-	timeline *redifu.Timeline[Account]
+	base           *redifu.Base[Account]
+	timeline       *redifu.Timeline[Account]
+	timelineSeeder *redifu.TimelineSeeder[Account]
 }
 
 func (br *Repository) Create(account *Account) (err error) {
 	return nil
 }
 
-func (br *Repository) Update(account *Account) (err error) {
+func (br *Repository) Update(tx *sql.Tx, account *Account) (err error) {
 	return nil
 }
 
-func (br *Repository) Delete(account *Account) (err error) {
+func (br *Repository) Delete(tx *sql.Tx, account *Account) (err error) {
 	return nil
 }
 

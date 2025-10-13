@@ -1,6 +1,7 @@
 package payment
 
 import (
+	"database/sql"
 	"github.com/21strive/redifu"
 	"paystore/balance"
 )
@@ -8,12 +9,12 @@ import (
 type Repository struct {
 	base           *redifu.Base[Payment]
 	timeline       *redifu.Timeline[Payment]
-	timelineSeeder *redifu.TimelineSQLSeeder[Payment]
+	timelineSeeder *redifu.TimelineSeeder[Payment]
 	sorted         *redifu.Sorted[Payment]
-	sortedSeeder   *redifu.SortedSQLSeeder[Payment]
+	sortedSeeder   *redifu.SortedSeeder[Payment]
 }
 
-func (br *Repository) Create(payment *Payment) (err error) {
+func (br *Repository) Create(tx *sql.Tx, payment *Payment) (err error) {
 	return nil
 }
 

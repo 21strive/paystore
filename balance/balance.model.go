@@ -7,7 +7,7 @@ import (
 )
 
 type Account struct {
-	*redifu.SQLItem
+	*redifu.Record
 	Balance              int64
 	LastIncome           time.Time
 	LastWithdraw         time.Time
@@ -44,6 +44,6 @@ func (ac *Account) Withdraw(amount int64) error {
 
 func NewAccount() *Account {
 	account := &Account{}
-	redifu.InitSQLItem(account)
+	redifu.InitRecord(account)
 	return account
 }
