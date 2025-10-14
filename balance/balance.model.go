@@ -15,6 +15,7 @@ type Account struct {
 	WithdrawAccumulation int64
 	Currency             string
 	ExternalID           string
+	OganizationUUID      string
 }
 
 func (ac *Account) SetCurrency(currency string) {
@@ -23,6 +24,10 @@ func (ac *Account) SetCurrency(currency string) {
 
 func (ac *Account) SetExternalID(externalID string) {
 	ac.ExternalID = externalID
+}
+
+func (ac *Account) SetOrganization(organizationUUID string) {
+	ac.OganizationUUID = organizationUUID
 }
 
 func (ac *Account) Collect(amount int64) {

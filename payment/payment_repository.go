@@ -1,0 +1,159 @@
+package payment
+
+import (
+	"database/sql"
+	"github.com/21strive/redifu"
+	"paystore/balance"
+	"paystore/definition"
+	"strings"
+)
+
+var createTableQuery = `
+		CREATE TABLE payment (
+		
+			-- Fields from Record
+			uuid VARCHAR(255) PRIMARY KEY,
+			randid VARCHAR(255) NOT NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+		
+			-- Fields from Payment
+			amount BIGINT NOT NULL,
+			balance_before_payment BIGINT NOT NULL,
+			balance_after_payment BIGINT NOT NULL,
+			balance_uuid VARCHAR(255) NOT NULL,
+			hash VARCHAR(255) NOT NULL,
+			vendor_record_id VARCHAR(255) NOT NULL,
+			organization_uuid VARCHAR(255) NOT NULL
+		
+		);
+		
+		-- Indexes for common queries
+		CREATE INDEX idx_payments_balance_uuid ON payment(balance_uuid);
+		CREATE INDEX idx_payments_created_at ON payment(created_at);
+		CREATE INDEX idx_payments_hash ON payment(hash);
+		`
+var firstPartSelectQuery = `SELECT p.uuid, p.randid, p.created_at, p.updated_at, p.amount, p.balance_before_payment, p.balance_after_payment, p.balance_uuid, p.organization_uuid, p.hash,`
+
+type Repository struct {
+	db                      *sql.DB
+	base                    *redifu.Base[Payment]
+	timelineByAccount       *redifu.Timeline[Payment]
+	timelineByAccountSeeder *redifu.TimelineSeeder[Payment]
+	Vendor                  VendorSpec
+}
+
+func (br *Repository) Create(tx *sql.Tx, payment *Payment, balance *balance.Account) error {
+	if payment.BalanceUUID != payment.BalanceUUID {
+		return definition.UnmatchBalance
+	}
+
+	query := `
+		INSERT INTO payment (
+			uuid, randid, created_at, updated_at,
+			amount, balance_before_payment, balance_after_payment,
+			balance_uuid, organization_uuid, hash
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := tx.Exec(query,
+		payment.GetUUID(),
+		payment.GetRandId(),
+		payment.GetCreatedAt(),
+		payment.GetUpdatedAt(),
+		payment.Amount,
+		payment.BalanceBeforePayment,
+		payment.BalanceAfterPayment,
+		payment.BalanceUUID,
+		payment.OrganizationUUID,
+		payment.Hash,
+	)
+	if err != nil {
+		return err
+	}
+
+	errSet := br.base.Set(*payment)
+	if errSet != nil {
+		return errSet
+	}
+
+	errSet = br.timelineByAccount.AddItem(*payment, []string{balance.GetRandId()})
+	if errSet != nil {
+		return errSet
+	}
+
+	return err
+}
+
+func (br *Repository) JoinBuilder() string {
+	var finalQuery string
+
+	finalQuery += firstPartSelectQuery
+	finalQuery += ` `
+
+	if br.Vendor != nil {
+		fields := br.Vendor.GetFields()
+		for _, field := range fields {
+			finalQuery += br.Vendor.GetAlias() + "." + field + ", "
+		}
+
+		finalQuery += `FROM payment p`
+		finalQuery += ` `
+		finalQuery += `LEFT JOIN ` + br.Vendor.GetTableName() + ` ` + br.Vendor.GetAlias()
+		finalQuery += ` `
+	} else {
+		finalQuery += `FROM payment p`
+	}
+
+	return finalQuery
+}
+
+func (br *Repository) FindLatestPayment(balance *balance.Account) (*Payment, error) {
+	query := firstPartSelectQuery
+	query += ` `
+	query += `FROM payment p WHERE balance_uuid = $1 ORDER BY created_at DESC LIMIT 1`
+
+	payment, err := br.PaymentRowScanner(br.db.QueryRow(query, balance.GetUUID()))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return payment, nil
+}
+
+func (br *Repository) SeedPartialByBalance(balance *balance.Account) error {
+	joinedQuery := br.JoinBuilder()
+
+	rowQuery := joinedQuery + " WHERE p.randid = $1"
+	firstPageQuery := joinedQuery + " WHERE p.balance_uuid = $1 ORDER BY created_at DESC"
+	nextPageQuery := joinedQuery + " WHERE p.balance_uuid = $1 AND created_at < $2 ORDER BY created_at DESC"
+
+	//errSeed := br.See
+
+	return nil
+}
+
+func (br *Repository) SeedAll() error {
+	return nil
+}
+
+func NewRepository(vendor VendorSpec) *Repository {
+	return &Repository{
+		Vendor: vendor,
+	}
+}
+
+func (br *Repository) PaymentRowScanner(row *sql.Row) (*Payment, error) {
+	var scanDests []interface{}
+
+	payment := NewPayment()
+	scanDests = append(scanDests, payment.ScanDestinations()...)
+
+	if br.Vendor != nil {
+		scanDests = append(scanDests, br.Vendor.GetScanDestinations()...)
+	}
+
+	err := row.Scan(scanDests...)
+	return payment, err
+}

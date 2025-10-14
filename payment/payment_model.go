@@ -6,8 +6,16 @@ import (
 	"encoding/json"
 	"github.com/21strive/redifu"
 	"paystore/balance"
+	"paystore/organization"
 	"time"
 )
+
+type VendorSpec interface {
+	GetAlias() string
+	GetTableName() string
+	GetFields() []string
+	GetScanDestinations() []interface{}
+}
 
 type Payment struct {
 	*redifu.Record
@@ -15,6 +23,8 @@ type Payment struct {
 	BalanceBeforePayment int64  `json:"balanceBeforePayment"`
 	BalanceAfterPayment  int64  `json:"balanceAfterPayment"`
 	BalanceUUID          string `json:"BalanceUUID"`
+	OrganizationUUID     string `json:"organizationUUID"`
+	VendorRecordID       string `json:"vendorRecordID"`
 	Hash                 string `json:"hash"`
 }
 
@@ -37,7 +47,14 @@ func (p *Payment) SetAmount(amount int64, currentBalanceAmount int64) {
 	p.Amount = amount
 	p.BalanceBeforePayment = currentBalanceAmount
 	p.BalanceAfterPayment = p.BalanceBeforePayment + p.Amount
+}
 
+func (p *Payment) SetOrganization(organization organization.Organization) {
+	p.OrganizationUUID = organization.UUID
+}
+
+func (p *Payment) SetVendorRecord(uuid string) {
+	p.VendorRecordID = uuid
 }
 
 func (p *Payment) GenerateHash(previousPayment *Payment) error {
@@ -85,6 +102,28 @@ func (p *Payment) Verify(previousPayment *Payment) (bool, error) {
 	}
 
 	return currentHash == p.Hash, nil
+}
+
+func (p *Payment) ScanDestinations() []interface{} {
+	return []interface{}{
+		&p.UUID,
+		&p.RandId,
+		&p.CreatedAt,
+		&p.UpdatedAt,
+		&p.Amount,
+		&p.BalanceBeforePayment,
+		&p.BalanceAfterPayment,
+		&p.BalanceUUID,
+		&p.OrganizationUUID,
+		&p.VendorRecordID,
+		&p.Hash,
+	}
+}
+
+func NewPayment() *Payment {
+	payment := &Payment{}
+	redifu.InitRecord(payment)
+	return payment
 }
 
 func createHash(payload HashPayload) (string, error) {
