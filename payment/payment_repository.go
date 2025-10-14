@@ -3,9 +3,9 @@ package payment
 import (
 	"database/sql"
 	"github.com/21strive/redifu"
+	"github.com/redis/go-redis/v9"
 	"paystore/balance"
 	"paystore/definition"
-	"strings"
 )
 
 var createTableQuery = `
@@ -34,13 +34,15 @@ var createTableQuery = `
 		CREATE INDEX idx_payments_hash ON payment(hash);
 		`
 var firstPartSelectQuery = `SELECT p.uuid, p.randid, p.created_at, p.updated_at, p.amount, p.balance_before_payment, p.balance_after_payment, p.balance_uuid, p.organization_uuid, p.hash,`
+var findLatestPaymentQuery = firstPartSelectQuery + `FROM payment p WHERE balance_uuid = $1 ORDER BY created_at DESC LIMIT 1`
 
 type Repository struct {
-	db                      *sql.DB
+	readDB                  *sql.DB
 	base                    *redifu.Base[Payment]
 	timelineByAccount       *redifu.Timeline[Payment]
 	timelineByAccountSeeder *redifu.TimelineSeeder[Payment]
 	Vendor                  VendorSpec
+	findLatestPaymentQuery  *sql.Stmt
 }
 
 func (br *Repository) Create(tx *sql.Tx, payment *Payment, balance *balance.Account) error {
@@ -107,11 +109,7 @@ func (br *Repository) JoinBuilder() string {
 }
 
 func (br *Repository) FindLatestPayment(balance *balance.Account) (*Payment, error) {
-	query := firstPartSelectQuery
-	query += ` `
-	query += `FROM payment p WHERE balance_uuid = $1 ORDER BY created_at DESC LIMIT 1`
-
-	payment, err := br.PaymentRowScanner(br.db.QueryRow(query, balance.GetUUID()))
+	payment, err := br.PaymentRowScanner(br.findLatestPaymentQuery.QueryRow(balance.GetUUID()))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -119,32 +117,38 @@ func (br *Repository) FindLatestPayment(balance *balance.Account) (*Payment, err
 		return nil, err
 	}
 
-	return payment, nil
+	return &payment, nil
 }
 
-func (br *Repository) SeedPartialByBalance(balance *balance.Account) error {
+func (br *Repository) SeedPartialByBalance(subtraction int64, lastRandId string, balance *balance.Account) error {
 	joinedQuery := br.JoinBuilder()
 
 	rowQuery := joinedQuery + " WHERE p.randid = $1"
 	firstPageQuery := joinedQuery + " WHERE p.balance_uuid = $1 ORDER BY created_at DESC"
 	nextPageQuery := joinedQuery + " WHERE p.balance_uuid = $1 AND created_at < $2 ORDER BY created_at DESC"
 
-	//errSeed := br.See
-
-	return nil
+	return br.timelineByAccountSeeder.SeedPartial(rowQuery, firstPageQuery, nextPageQuery, br.PaymentRowScanner, br.PaymentRowsScanner, []interface{}{balance.GetUUID()}, subtraction, lastRandId, []string{balance.GetRandId()})
 }
 
 func (br *Repository) SeedAll() error {
 	return nil
 }
 
-func NewRepository(vendor VendorSpec) *Repository {
+func NewRepository(writeDB *sql.DB, readDB *sql.DB, redis *redis.UniversalClient, vendor VendorSpec) *Repository {
+	var err error
+
+	findLatestPaymentStmt, err := readDB.Prepare(findLatestPaymentQuery)
+	if err != nil {
+		panic(err)
+	}
+
 	return &Repository{
-		Vendor: vendor,
+		Vendor:                 vendor,
+		findLatestPaymentQuery: findLatestPaymentStmt,
 	}
 }
 
-func (br *Repository) PaymentRowScanner(row *sql.Row) (*Payment, error) {
+func (br *Repository) PaymentRowScanner(row *sql.Row) (Payment, error) {
 	var scanDests []interface{}
 
 	payment := NewPayment()
@@ -155,5 +159,19 @@ func (br *Repository) PaymentRowScanner(row *sql.Row) (*Payment, error) {
 	}
 
 	err := row.Scan(scanDests...)
-	return payment, err
+	return *payment, err
+}
+
+func (br *Repository) PaymentRowsScanner(rows *sql.Rows) (Payment, error) {
+	var scanDests []interface{}
+
+	payment := NewPayment()
+	scanDests = append(scanDests, payment.ScanDestinations()...)
+
+	if br.Vendor != nil {
+		scanDests = append(scanDests, br.Vendor.GetScanDestinations()...)
+	}
+
+	err := rows.Scan(scanDests...)
+	return *payment, err
 }
