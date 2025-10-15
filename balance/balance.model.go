@@ -2,7 +2,6 @@ package balance
 
 import (
 	"github.com/21strive/redifu"
-	"paystore/definition"
 	"time"
 )
 
@@ -39,7 +38,7 @@ func (ac *Account) Collect(amount int64) {
 
 func (ac *Account) Withdraw(amount int64) error {
 	if amount > ac.Balance {
-		return definition.InsufficientFunds
+		return InsufficientFunds
 	}
 
 	ac.Balance -= amount

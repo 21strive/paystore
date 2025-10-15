@@ -19,24 +19,28 @@ type VendorSpec interface {
 
 type Payment struct {
 	*redifu.Record
-	Amount               int64  `json:"amount"`
-	BalanceBeforePayment int64  `json:"balanceBeforePayment"`
-	BalanceAfterPayment  int64  `json:"balanceAfterPayment"`
-	BalanceUUID          string `json:"BalanceUUID"`
-	OrganizationUUID     string `json:"organizationUUID"`
-	VendorRecordID       string `json:"vendorRecordID"`
-	Hash                 string `json:"hash"`
+	Amount               int64         `json:"amount"`
+	BalanceBeforePayment int64         `json:"balanceBeforePayment"`
+	BalanceAfterPayment  int64         `json:"balanceAfterPayment"`
+	BalanceUUID          string        `json:"BalanceUUID"`
+	OrganizationUUID     string        `json:"organizationUUID"`
+	VendorRecordID       string        `json:"vendorRecordID"`
+	Status               PaymentStatus `json:"status"`
+	Hash                 string        `json:"hash"`
 }
 
 type HashPayload struct {
-	UUID                 string    `json:"uuid"`
-	RandId               string    `json:"randid"`
-	CreatedAt            time.Time `json:"createdAt"`
-	Amount               int64     `json:"amount"`
-	BalanceBeforePayment int64     `json:"balanceBeforePayment"`
-	BalanceAfterPayment  int64     `json:"balanceAfterPayment"`
-	BalanceUUID          string    `json:"balanceUUID"`
-	PreviousPaymentHash  string    `json:"previousPaymentHash"`
+	UUID                 string        `json:"uuid"`
+	RandId               string        `json:"randid"`
+	CreatedAt            time.Time     `json:"createdAt"`
+	Amount               int64         `json:"amount"`
+	BalanceBeforePayment int64         `json:"balanceBeforePayment"`
+	BalanceAfterPayment  int64         `json:"balanceAfterPayment"`
+	BalanceUUID          string        `json:"balanceUUID"`
+	OrganizationUUID     string        `json:"organizationUUID"`
+	VendorRecordID       string        `json:"vendorRecordID"`
+	Status               PaymentStatus `json:"status"`
+	PreviousPaymentHash  string        `json:"previousPaymentHash"`
 }
 
 func (p *Payment) SetBalance(balance *balance.Account) {
@@ -66,6 +70,9 @@ func (p *Payment) GenerateHash(previousPayment *Payment) error {
 		BalanceBeforePayment: p.BalanceBeforePayment,
 		BalanceAfterPayment:  p.BalanceAfterPayment,
 		BalanceUUID:          p.BalanceUUID,
+		OrganizationUUID:     p.OrganizationUUID,
+		VendorRecordID:       p.VendorRecordID,
+		Status:               p.Status,
 	}
 
 	if previousPayment != nil {
@@ -120,9 +127,18 @@ func (p *Payment) ScanDestinations() []interface{} {
 	}
 }
 
+func (p *Payment) SetPaid() {
+	p.Status = StatusPaid
+}
+
+func (p *Payment) SetFailed() {
+	p.Status = StatusFailed
+}
+
 func NewPayment() *Payment {
 	payment := &Payment{}
 	redifu.InitRecord(payment)
+	payment.Status = StatusPending
 	return payment
 }
 

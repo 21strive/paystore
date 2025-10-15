@@ -3,7 +3,6 @@ package payment
 import (
 	"fmt"
 	"github.com/21strive/redifu"
-	"paystore/balance"
 	"paystore/helper"
 	"testing"
 	"time"
@@ -48,26 +47,7 @@ func TestQueryJoin(t *testing.T) {
 	dummyXendit.Amount = 10000
 	dummyXendit.PaymentMethod = "credit_card"
 
-	repository := NewRepository(dummyXendit)
+	repository := NewRepository(nil, nil, nil, dummyXendit)
 	finalQuery := repository.JoinBuilder()
 	fmt.Print(finalQuery)
-}
-
-func TestSeedPartialQuery(t *testing.T) {
-	balance := balance.NewAccount()
-
-	dummyXendit := &Xendit{}
-	redifu.InitRecord(dummyXendit)
-	dummyXendit.SetUUID()
-	dummyXendit.SetRandId()
-	dummyXendit.SetCreatedAt(time.Now())
-	dummyXendit.SetUpdatedAt(time.Now())
-	dummyXendit.Amount = 10000
-	dummyXendit.PaymentMethod = "credit_card"
-
-	repository := NewRepository(dummyXendit)
-	errSeed := repository.SeedPartialByBalance(balance)
-	if errSeed != nil {
-		t.Error(errSeed)
-	}
 }

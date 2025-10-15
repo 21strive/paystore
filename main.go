@@ -1,5 +1,9 @@
 package main
 
+type CommonTransaction interface {
+	GetUUID() string
+}
+
 func main() {
 	// setiap record harus punya hashing
 	// adanya PIN untuk auth berbagai action
