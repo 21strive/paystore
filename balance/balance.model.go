@@ -2,41 +2,47 @@ package balance
 
 import (
 	"github.com/21strive/redifu"
+	"paystore/organization"
 	"time"
 )
 
-type Account struct {
+type Balance struct {
 	*redifu.Record
 	Balance              int64
-	LastIncome           time.Time
+	LastReceive          time.Time
 	LastWithdraw         time.Time
 	IncomeAccumulation   int64
 	WithdrawAccumulation int64
 	Currency             string
-	ExternalID           string
-	OganizationUUID      string
+	Active               bool
+	OwnerID              string
+	OrganizationUUID     string
 }
 
-func (ac *Account) SetCurrency(currency string) {
+func (ac *Balance) SetCurrency(currency string) {
 	ac.Currency = currency
 }
 
-func (ac *Account) SetExternalID(externalID string) {
-	ac.ExternalID = externalID
+func (ac *Balance) SetOwner(ownerID string) {
+	ac.OwnerID = ownerID
 }
 
-func (ac *Account) SetOrganization(organizationUUID string) {
-	ac.OganizationUUID = organizationUUID
+func (ac *Balance) SetOrganization(organization organization.Organization) {
+	ac.OrganizationUUID = organization.GetUUID()
 }
 
-func (ac *Account) Collect(amount int64) {
+func (ac *Balance) Deactivate() {
+	ac.Active = false
+}
+
+func (ac *Balance) Collect(amount int64) {
 	if amount > 0 {
 		ac.Balance += amount
 		ac.IncomeAccumulation += amount
 	}
 }
 
-func (ac *Account) Withdraw(amount int64) error {
+func (ac *Balance) Withdraw(amount int64) error {
 	if amount > ac.Balance {
 		return InsufficientFunds
 	}
@@ -46,8 +52,28 @@ func (ac *Account) Withdraw(amount int64) error {
 	return nil
 }
 
-func NewAccount() *Account {
-	account := &Account{}
+func (ac *Balance) ScanDestinations() []interface{} {
+	return []interface{}{
+		&ac.UUID,
+		&ac.RandId,
+		&ac.CreatedAt,
+		&ac.UpdatedAt,
+		&ac.Balance,
+		&ac.LastReceive,
+		&ac.LastWithdraw,
+		&ac.IncomeAccumulation,
+		&ac.WithdrawAccumulation,
+		&ac.Currency,
+		&ac.Active,
+		&ac.OwnerID,
+		&ac.OrganizationUUID,
+	}
+}
+
+func NewAccount() *Balance {
+	account := &Balance{}
 	redifu.InitRecord(account)
+
+	account.Active = true
 	return account
 }

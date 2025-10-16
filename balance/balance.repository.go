@@ -3,36 +3,118 @@ package balance
 import (
 	"database/sql"
 	"github.com/21strive/redifu"
+	"paystore/organization"
 )
 
+var findByUUIDQuery = `SELECT * FROM balance WHERE uuid = $1;`
+var findByExternalIDQuery = `SELECT * FROM balance WHERE external_id = $1;`
+
 type Repository struct {
-	base           *redifu.Base[Account]
-	timeline       *redifu.Timeline[Account]
-	timelineSeeder *redifu.TimelineSeeder[Account]
+	base                 *redifu.Base[Balance]
+	timeline             *redifu.Timeline[Balance]
+	timelineSeeder       *redifu.TimelineSeeder[Balance]
+	findByUUIDStmt       *sql.Stmt
+	findByExternalIDStmt *sql.Stmt
 }
 
-func (br *Repository) Create(account *Account) (err error) {
+func (br *Repository) Create(tx *sql.Tx, balance *Balance) (err error) {
+	query := `INSERT INTO balance 
+    (
+     uuid, randid, created_at, updated_at, balance, 
+     last_receive, last_withdraw, income_accumulation, withdraw_accumulation, 
+     currency, active, external_id, organization_uuid
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
+    `
+	_, errExec := tx.Exec(
+		query, balance.GetUUID(), balance.GetRandId(), balance.GetCreatedAt(), balance.GetUpdatedAt(), balance.Balance,
+		balance.LastReceive, balance.LastWithdraw, balance.IncomeAccumulation, balance.WithdrawAccumulation,
+		balance.Currency, balance.Active, balance.OwnerID, balance.OrganizationUUID)
+	if errExec != nil {
+		return errExec
+	}
+
+	errSet := br.base.Set(*balance)
+	if errSet != nil {
+		return errSet
+	}
+
+	br.timeline.AddItem(*balance, []string{balance.OrganizationUUID})
+
 	return nil
 }
 
-func (br *Repository) Update(tx *sql.Tx, account *Account) (err error) {
+func (br *Repository) Update(tx *sql.Tx, balance *Balance) (err error) {
+	query := `UPDATE balance SET 
+		updated_at = $1, balance = $2, last_receive = $3, last_withdraw = $4, income_accumulation = $5, 
+		withdraw_accumulation = $6, currency = $7, active = $8, external_id = $9, organization_uuid = $10
+		WHERE uuid = $11`
+
+	_, errExec := tx.Exec(
+		query, balance.GetUpdatedAt(), balance.Balance, balance.LastReceive, balance.LastWithdraw,
+		balance.IncomeAccumulation, balance.WithdrawAccumulation, balance.Currency, balance.Active,
+		balance.OwnerID, balance.OrganizationUUID, balance.GetUUID())
+	if errExec != nil {
+		return errExec
+	}
+
+	errSet := br.base.Set(*balance)
+	if errSet != nil {
+		return errSet
+	}
+
 	return nil
 }
 
-func (br *Repository) Delete(tx *sql.Tx, account *Account) (err error) {
-	return nil
+func (br *Repository) FindByUUID(uuid string) (*Balance, error) {
+	account, errFind := BalanceRowScanner(br.findByUUIDStmt.QueryRow(uuid))
+	if errFind != nil {
+		if errFind == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, errFind
+	}
+
+	return &account, nil
 }
 
-func (br *Repository) FindByUUID(uuid string) (account *Account, err error) {
-	return nil, nil
+func (br *Repository) FindByExternalID(externalID string) (*Balance, error) {
+	account, errFind := BalanceRowScanner(br.findByExternalIDStmt.QueryRow(externalID))
+	if errFind != nil {
+		if errFind == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, errFind
+	}
+
+	return &account, nil
 }
 
-func (br *Repository) FindByExternalID(externalID string) (account *Account, err error) {
-	return nil, nil
+func (br *Repository) SeedPartial(subtraction int64, lastRandId string, organization organization.Organization) error {
+	baseQuery := `SELECT 
+    	uuid, randid, created_at, updated_at, balance, last_receive, last_withdraw, income_accumulation, 
+    	withdraw_accumulation, currency, active, external_id, organization_uuid FROM balance`
+
+	rowQuery := baseQuery + ` WHERE randid = $1`
+	firstPageQuery := baseQuery + ` WHERE organization_uuid = $1 ORDER BY created_at DESC`
+	nextPageQuery := baseQuery + ` WHERE organization_uuid = $1 AND created_at < $2 ORDER BY created_at DESC`
+
+	return br.timelineSeeder.SeedPartial(
+		rowQuery, firstPageQuery, nextPageQuery, BalanceRowScanner, BalanceRowsScanner,
+		[]interface{}{organization.GetUUID()}, subtraction, lastRandId, []string{organization.GetRandId()})
 }
 
-func (br *Repository) SeedPartial() error {
-	return nil
+func BalanceRowScanner(row *sql.Row) (Balance, error) {
+	balance := NewAccount()
+	err := row.Scan(balance.ScanDestinations()...)
+
+	return *balance, err
+}
+
+func BalanceRowsScanner(rows *sql.Rows) (Balance, error) {
+	balance := NewAccount()
+	err := rows.Scan(balance.ScanDestinations()...)
+
+	return *balance, err
 }
 
 func NewManager() *Repository {

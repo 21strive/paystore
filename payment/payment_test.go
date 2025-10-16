@@ -47,7 +47,7 @@ func TestQueryJoin(t *testing.T) {
 	dummyXendit.Amount = 10000
 	dummyXendit.PaymentMethod = "credit_card"
 
-	repository := NewRepository(nil, nil, nil, dummyXendit)
+	repository, _ := NewRepository(nil, nil, dummyXendit, nil, nil)
 	finalQuery := repository.JoinBuilder()
 	fmt.Print(finalQuery)
 }

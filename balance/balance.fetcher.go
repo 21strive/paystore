@@ -15,7 +15,7 @@ func (bf *Fetcher) IsBlankByExternalID(externalID string) bool {
 	return false
 }
 
-func (bf *Fetcher) FetchPartial(lastRandId []string) ([]Account, error) {
+func (bf *Fetcher) FetchPartial(lastRandId []string) ([]Balance, error) {
 	return nil, nil
 }
 

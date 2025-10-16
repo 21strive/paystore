@@ -2,26 +2,25 @@ package organization
 
 import (
 	"github.com/21strive/redifu"
-	"paystore/balance"
 )
 
 type Organization struct {
 	*redifu.Record
-	Name        string
-	Avatar      string
-	BalanceUUID string
+	Name   string
+	Slug   string
+	Avatar string
 }
 
 func (o *Organization) SetName(name string) {
 	o.Name = name
 }
 
-func (o *Organization) SetAvatar(avatar string) {
-	o.Avatar = avatar
+func (o *Organization) SetSlug(slug string) {
+	o.Slug = slug
 }
 
-func (o *Organization) SetBalance(balance *balance.Account) {
-	o.BalanceUUID = balance.UUID
+func (o *Organization) SetAvatar(avatar string) {
+	o.Avatar = avatar
 }
 
 func NewOrganization() *Organization {

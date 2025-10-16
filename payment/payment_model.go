@@ -43,7 +43,7 @@ type HashPayload struct {
 	PreviousPaymentHash  string        `json:"previousPaymentHash"`
 }
 
-func (p *Payment) SetBalance(balance *balance.Account) {
+func (p *Payment) SetBalance(balance *balance.Balance) {
 	p.BalanceUUID = balance.UUID
 }
 
