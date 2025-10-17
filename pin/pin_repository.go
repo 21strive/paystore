@@ -3,10 +3,11 @@ package pin
 import (
 	"database/sql"
 	"github.com/21strive/redifu"
+	"github.com/redis/go-redis/v9"
+	"time"
 )
 
 type Repository struct {
-	db   *sql.DB
 	base *redifu.Base[*Pin]
 }
 
@@ -33,4 +34,11 @@ func (r *Repository) Update(tx sql.Tx, pin *Pin) error {
 	}
 
 	return nil
+}
+
+func NewPINRepository(redis redis.UniversalClient, recordAge time.Duration) *Repository {
+	base := redifu.NewBase[*Pin](redis, "pin:%s", recordAge)
+	return &Repository{
+		base: base,
+	}
 }

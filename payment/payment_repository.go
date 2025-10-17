@@ -5,6 +5,7 @@ import (
 	"github.com/21strive/redifu"
 	"github.com/redis/go-redis/v9"
 	"paystore/balance"
+	"paystore/config"
 	"paystore/organization"
 )
 
@@ -12,12 +13,21 @@ var firstPartSelectQuery = `SELECT p.uuid, p.randid, p.created_at, p.updated_at,
 var findLatestPaymentQuery = firstPartSelectQuery + `FROM payment p WHERE p.balance_uuid = $1 ORDER BY created_at DESC LIMIT 1;`
 var findPaymentByUUIDQuery = firstPartSelectQuery + `FROM payment p WHERE p.uuid = $1;`
 
+type RepositoryClient interface {
+	Create(tx *sql.Tx, payment *Payment, balance *balance.Balance) error
+	Update(tx *sql.Tx, payment *Payment, balance *balance.Balance) error
+	FindLatestPayment(balance *balance.Balance) (*Payment, error)
+	FindByUUID(uuid string) (*Payment, error)
+	SeedPartialByBalance(subtraction int64, lastRandId string, balance *balance.Balance) error
+	SeedAll() error
+}
+
 type Repository struct {
 	readDB                  *sql.DB
 	base                    *redifu.Base[*Payment]
 	timelineByAccount       *redifu.Timeline[*Payment]
 	timelineByAccountSeeder *redifu.TimelineSeeder[*Payment]
-	Vendor                  VendorSpec
+	Vendor                  config.Vendor
 	Organization            *organization.Organization
 	findLatestPaymentStmt   *sql.Stmt
 	findPaymentByUUIDStmt   *sql.Stmt
@@ -141,7 +151,7 @@ func (br *Repository) SeedAll() error {
 	return nil
 }
 
-func NewRepository(readDB *sql.DB, redis redis.UniversalClient, vendor VendorSpec, organization *organization.Organization, config *Config) (*Repository, error) {
+func NewRepository(readDB *sql.DB, redis redis.UniversalClient, vendor config.Vendor, organization *organization.Organization, config *config.App) (*Repository, error) {
 	var err error
 
 	if vendor == nil {

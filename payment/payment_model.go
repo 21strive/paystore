@@ -10,13 +10,6 @@ import (
 	"time"
 )
 
-type VendorSpec interface {
-	GetAlias() string
-	GetTableName() string
-	GetFields() []string
-	GetScanDestinations() []interface{}
-}
-
 type Payment struct {
 	*redifu.Record
 	Amount               int64         `json:"amount"`

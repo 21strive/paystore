@@ -57,3 +57,13 @@ var createTableOrganization = `CREATE TABLE organization (
 		BalanceUUID VARCHAR(255)
 	);
 `
+
+var createTableTransaction = `CREATE TABLE transaction (
+		uuid VARCHAR(255) PRIMARY KEY, 
+		randid VARCHAR(255) NOT NULL, 
+		created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
+		updated_at TIMESTAMP NOT NULL DEFAULT NOW(), 
+		transaction_type VARCHAR(255) NOT NULL, 
+		record_uuid VARCHAR(255) NOT NULL, 
+		balance_uuid VARCHAR(255) NOT NULL
+ 	);`
