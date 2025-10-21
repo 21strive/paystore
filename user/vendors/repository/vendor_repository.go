@@ -3,8 +3,12 @@ package repository
 import (
 	"database/sql"
 	"github.com/21strive/redifu"
-	"paystore/user/vendorspec/model"
+	"paystore/user/vendors/model"
 )
+
+type VendorRepositoryClient interface {
+	Create(tx *sql.Tx, vendor *model.Vendor) error
+}
 
 type VendorRepository struct {
 	base *redifu.Base[*model.Vendor]

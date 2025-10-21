@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"github.com/21strive/redifu"
 	"paystore/lib/def"
-	"paystore/user/vendorspec/model"
+	"paystore/user/vendors/model"
 	"time"
 )
 

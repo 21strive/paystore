@@ -9,103 +9,118 @@ import (
 	"paystore/lib/model"
 	"paystore/lib/organization"
 	"paystore/lib/payment"
-	vendorRepo "paystore/user/vendorspec/repository"
+	"paystore/lib/request"
+	vendorModel "paystore/user/vendors/model"
+	vendorRepo "paystore/user/vendors/repository"
 )
 
 type OrganizationClient struct {
 	organizationRepository organization.RepositoryClient
 }
 
-func (oc *OrganizationClient) Register(request def.CreateOrganizationRequest) error {
-	newOrganization := model.NewOrganization()
-	newOrganization.Name = request.Name
-	newOrganization.Slug = request.Slug
-
-	organizationFromDB, errFind := oc.organizationRepository.FindBySlug(newOrganization.Slug)
-	if errFind != nil {
-		return errFind
-	}
-	if organizationFromDB != nil {
-		return nil
-	}
-
-	return oc.organizationRepository.Create(newOrganization)
-}
-
-type OrganizationFinder struct {
-	oc *OrganizationClient
-}
-
-func (of *OrganizationFinder) ByUUID(uuid string) (*model.Organization, error) {
-	return of.oc.organizationRepository.FindByUUID(uuid)
-}
-
-func (of *OrganizationFinder) BySlug(slug string) (*model.Organization, error) {
-	return of.oc.organizationRepository.FindBySlug(slug)
-}
-
-func (oc *OrganizationClient) Find() *OrganizationFinder {
-	return &OrganizationFinder{oc: oc}
-}
-
-func NewOrganizationClient(writeDB *sql.DB, readDB *sql.DB,
-	redis redis.UniversalClient, config *config.App) *OrganizationClient {
-
-	organizationRepository := organization.NewRepository(writeDB, readDB, redis, config)
-	return &OrganizationClient{
-		organizationRepository: organizationRepository,
-	}
-}
+//func (oc *OrganizationClient) Register(request def.CreateOrganizationRequest) error {
+//	newOrganization := model.NewOrganization()
+//	newOrganization.Name = request.Name
+//	newOrganization.Slug = request.Slug
+//
+//	organizationFromDB, errFind := oc.organizationRepository.FindBySlug(newOrganization.Slug)
+//	if errFind != nil {
+//		return errFind
+//	}
+//	if organizationFromDB != nil {
+//		return nil
+//	}
+//
+//	return oc.organizationRepository.Create(newOrganization)
+//}
+//
+//type OrganizationFinder struct {
+//	oc *OrganizationClient
+//}
+//
+//func (of *OrganizationFinder) ByUUID(uuid string) (*model.Organization, error) {
+//	return of.oc.organizationRepository.FindByUUID(uuid)
+//}
+//
+//func (of *OrganizationFinder) BySlug(slug string) (*model.Organization, error) {
+//	return of.oc.organizationRepository.FindBySlug(slug)
+//}
+//
+//func (oc *OrganizationClient) Find() *OrganizationFinder {
+//	return &OrganizationFinder{oc: oc}
+//}
+//
+//func NewOrganizationClient(writeDB *sql.DB, readDB *sql.DB,
+//	redis redis.UniversalClient, config *config.App) *OrganizationClient {
+//
+//	organizationRepository := organization.NewRepository(writeDB, readDB, redis, config)
+//	return &OrganizationClient{
+//		organizationRepository: organizationRepository,
+//	}
+//}
 
 type PaystoreClient struct {
-	writeDB           *sql.DB
-	balanceRepository balance.RepositoryClient
-	paymentRepository payment.RepositoryClient
+	writeDB                *sql.DB
+	balanceRepository      balance.RepositoryClient
+	paymentRepository      payment.RepositoryClient
+	vendorRepository       vendorRepo.VendorRepositoryClient
+	organizationRepository organization.RepositoryClient
 }
 
-func (ps *PaystoreClient) ReceivePayment(request def.ReceivePaymentRequest, selectedOrganization *model.Organization) error {
+func (ps *PaystoreClient) ReceivePayment(request request.ReceivePaymentRequest, vendorItem *vendorModel.Vendor) (*model.Payment, error) {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(request.AccountUUID)
 	if errFind != nil {
-		return errFind
-	}
-	if balanceFromDB == nil {
-		return def.AccountNotFound
+		return nil, errFind
 	}
 
-	if balanceFromDB.OrganizationUUID != selectedOrganization.GetUUID() {
-		return def.OrganizationMismatch
+	organizationFromDB, errFind := ps.organizationRepository.FindByUUID(balanceFromDB.OrganizationUUID)
+	if errFind != nil {
+		return nil, errFind
 	}
 
 	newPayment := model.NewPayment()
 	newPayment.Amount = request.Amount
 	newPayment.VendorRecordID = request.VendorRecordID
 	newPayment.BalanceUUID = balanceFromDB.GetUUID()
-	newPayment.OrganizationUUID = selectedOrganization.GetUUID()
+	newPayment.OrganizationUUID = organizationFromDB.GetUUID()
 
 	tx, errInitTx := ps.writeDB.Begin()
 	if errInitTx != nil {
-		return errInitTx
+		return nil, errInitTx
 	}
 	defer tx.Rollback()
 
-	errCreatePayment := ps.paymentRepository.Create(tx, newPayment, balanceFromDB)
+	errCreatePayment := ps.paymentRepository.Create(tx, newPayment, balanceFromDB, organizationFromDB)
 	if errCreatePayment != nil {
-		return errCreatePayment
+		return nil, errCreatePayment
+	}
+
+	errCreateVendor := ps.vendorRepository.Create(tx, vendorItem)
+	if errCreateVendor != nil {
+		return nil, errCreateVendor
 	}
 
 	balanceFromDB.LastReceive = newPayment.GetCreatedAt()
 	balanceFromDB.Collect(newPayment.Amount)
 	errUpdateBalance := ps.balanceRepository.Update(tx, balanceFromDB)
 	if errUpdateBalance != nil {
-		return errUpdateBalance
+		return nil, errUpdateBalance
 	}
 
 	errCommit := tx.Commit()
 	if errCommit != nil {
-		return errCommit
+		return nil, errCommit
 	}
 
-	return nil
+	return newPayment, nil
+}
+
+func (ps *PaystoreClient) CreateBalance(request request.CreateBalanceRequest) (*model.Balance, error) {
+
+}
+
+func (ps *PaystoreClient) CreateOrganization(request request.CreateOrganizationRequest) (*model.Organization, error) {
+
 }
 
 type PaymentSeeder struct {
@@ -118,7 +133,7 @@ func (psr *PaymentSeeder) ByBalance(subtraction int64, lastRandId string, balanc
 		return errFind
 	}
 	if balanceFromDB == nil {
-		return def.AccountNotFound
+		return def.BalanceNotFound
 	}
 
 	return psr.ps.paymentRepository.SeedPartialByBalance(subtraction, lastRandId, balanceFromDB)
@@ -150,12 +165,12 @@ func (ps *PaystoreClient) InitWithdraw(amount int64, balance *model.Balance) err
 }
 
 func New(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient,
-	config *config.App, vendorConfig *config.Vendor, organization *model.Organization) *PaystoreClient {
+	config *config.App) *PaystoreClient {
 	var errInit error
 
 	balanceRepo := balance.NewRepository(readDB, redis, config)
 	vendorRepo := vendorRepo.NewVendorRepository()
-	paymentRepo, errInit := payment.NewRepository(readDB, redis, vendorConfig, vendorRepo, organization, config)
+	paymentRepo, errInit := payment.NewRepository(readDB, redis, vendorRepo, config)
 	if errInit != nil {
 		panic(errInit)
 	}
@@ -163,14 +178,15 @@ func New(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient,
 		panic(errInit)
 	}
 
-	return Client(writeDB, balanceRepo, paymentRepo)
+	return Client(writeDB, balanceRepo, paymentRepo, vendorRepo)
 }
 
 func Client(writeDB *sql.DB, balanceRepository balance.RepositoryClient,
-	paymentRepository payment.RepositoryClient) *PaystoreClient {
+	paymentRepository payment.RepositoryClient, vendorRepository vendorRepo.VendorRepositoryClient) *PaystoreClient {
 	return &PaystoreClient{
 		writeDB:           writeDB,
 		balanceRepository: balanceRepository,
 		paymentRepository: paymentRepository,
+		vendorRepository:  vendorRepository,
 	}
 }

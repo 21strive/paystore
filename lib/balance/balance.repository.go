@@ -80,7 +80,7 @@ func (br *Repository) FindByUUID(uuid string) (*model2.Balance, error) {
 	account, errFind := BalanceRowScanner(br.findByUUIDStmt.QueryRow(uuid))
 	if errFind != nil {
 		if errFind == sql.ErrNoRows {
-			return nil, nil
+			return nil, def.BalanceNotFound
 		}
 		return nil, errFind
 	}
@@ -92,7 +92,7 @@ func (br *Repository) FindByExternalID(externalID string) (*model2.Balance, erro
 	account, errFind := BalanceRowScanner(br.findByExternalIDStmt.QueryRow(externalID))
 	if errFind != nil {
 		if errFind == sql.ErrNoRows {
-			return nil, def.AccountNotFound
+			return nil, def.BalanceNotFound
 		}
 		return nil, errFind
 	}

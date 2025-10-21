@@ -2,7 +2,7 @@ package config
 
 import (
 	"paystore/lib/helper"
-	"paystore/user/vendorspec/model"
+	"paystore/user/vendors/model"
 	"time"
 )
 
@@ -12,39 +12,40 @@ type App struct {
 	PaginationAge    time.Duration
 	VendorTableAlias string
 	VendorTableName  string
-}
-
-func DefaultConfig(orgName string, orgSlug string) *App {
-	return &App{
-		ItemPerPage:   50,
-		RecordAge:     time.Hour * 12,
-		PaginationAge: time.Hour * 24,
-	}
-}
-
-type Vendor struct {
-	VendorTableAlias string
-	VendorTableName  string
 	vendorSampleItem *model.Vendor
 }
 
-func (v *Vendor) GetVendorTableAlias() string {
-	return v.VendorTableAlias
+func (a *App) GetVendorTableAlias() string {
+	return a.VendorTableAlias
 }
 
-func (v *Vendor) GetVendorTableName() string {
-	return v.VendorTableName
+func (a *App) GetVendorTableName() string {
+	return a.VendorTableName
 }
 
-func (v *Vendor) GetFields() []string {
-	return helper.FetchColumns(v.vendorSampleItem)
+func (a *App) GetFields() []string {
+	return helper.FetchColumns(a.vendorSampleItem)
 }
 
-func NewVendorConfig(vendorTableAlias string, vendorTableName string) *Vendor {
+func DefaultConfig(vendorTableName string) *App {
+	var vendorTableAlias string
+	if len(vendorTableName) > 0 {
+		firstChar := string(vendorTableName[0])
+		if firstChar == "p" {
+			vendorTableAlias = "v"
+		} else {
+			vendorTableAlias = firstChar
+		}
+	}
+
 	vendorSampleItem := model.NewVendor()
-	return &Vendor{
-		VendorTableAlias: vendorTableAlias,
+
+	return &App{
+		ItemPerPage:      50,
+		RecordAge:        time.Hour * 12,
+		PaginationAge:    time.Hour * 24,
 		VendorTableName:  vendorTableName,
+		VendorTableAlias: vendorTableAlias,
 		vendorSampleItem: vendorSampleItem,
 	}
 }
