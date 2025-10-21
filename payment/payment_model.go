@@ -116,6 +116,7 @@ func (p *Payment) ScanDestinations() []interface{} {
 		&p.BalanceUUID,
 		&p.OrganizationUUID,
 		&p.VendorRecordID,
+		&p.Status,
 		&p.Hash,
 	}
 }

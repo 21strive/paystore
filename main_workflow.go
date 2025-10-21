@@ -137,6 +137,14 @@ func (ps *PaystoreClient) SeedPayment(subtraction int64, lastRandId string, bala
 	return nil
 }
 
+func (ps *PaystoreClient) InitWithdraw(amount int64, balance *balance.Balance) error {
+	errWithdraw := balance.Withdraw(amount)
+	if errWithdraw != nil {
+		return errWithdraw
+	}
+
+}
+
 func New(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient,
 	config *config.App, vendor config.Vendor, organization *organization.Organization) *PaystoreClient {
 	var errInit error
