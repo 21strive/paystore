@@ -1,20 +1,23 @@
-package main
+package paystore
 
 import (
 	"database/sql"
 	"github.com/redis/go-redis/v9"
-	"paystore/balance"
 	"paystore/config"
-	"paystore/organization"
-	"paystore/payment"
+	"paystore/lib/balance"
+	"paystore/lib/def"
+	"paystore/lib/model"
+	"paystore/lib/organization"
+	"paystore/lib/payment"
+	vendorRepo "paystore/user/vendorspec/repository"
 )
 
 type OrganizationClient struct {
 	organizationRepository organization.RepositoryClient
 }
 
-func (oc *OrganizationClient) Register(request organization.CreateOrganizationRequest) error {
-	newOrganization := organization.NewOrganization()
+func (oc *OrganizationClient) Register(request def.CreateOrganizationRequest) error {
+	newOrganization := model.NewOrganization()
 	newOrganization.Name = request.Name
 	newOrganization.Slug = request.Slug
 
@@ -33,11 +36,11 @@ type OrganizationFinder struct {
 	oc *OrganizationClient
 }
 
-func (of *OrganizationFinder) ByUUID(uuid string) (*organization.Organization, error) {
+func (of *OrganizationFinder) ByUUID(uuid string) (*model.Organization, error) {
 	return of.oc.organizationRepository.FindByUUID(uuid)
 }
 
-func (of *OrganizationFinder) BySlug(slug string) (*organization.Organization, error) {
+func (of *OrganizationFinder) BySlug(slug string) (*model.Organization, error) {
 	return of.oc.organizationRepository.FindBySlug(slug)
 }
 
@@ -60,20 +63,20 @@ type PaystoreClient struct {
 	paymentRepository payment.RepositoryClient
 }
 
-func (ps *PaystoreClient) ReceivePayment(request payment.ReceivePaymentRequest, selectedOrganization *organization.Organization) error {
+func (ps *PaystoreClient) ReceivePayment(request def.ReceivePaymentRequest, selectedOrganization *model.Organization) error {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(request.AccountUUID)
 	if errFind != nil {
 		return errFind
 	}
 	if balanceFromDB == nil {
-		return balance.AccountNotFound
+		return def.AccountNotFound
 	}
 
 	if balanceFromDB.OrganizationUUID != selectedOrganization.GetUUID() {
-		return organization.OrganizationMismatch
+		return def.OrganizationMismatch
 	}
 
-	newPayment := payment.NewPayment()
+	newPayment := model.NewPayment()
 	newPayment.Amount = request.Amount
 	newPayment.VendorRecordID = request.VendorRecordID
 	newPayment.BalanceUUID = balanceFromDB.GetUUID()
@@ -115,7 +118,7 @@ func (psr *PaymentSeeder) ByBalance(subtraction int64, lastRandId string, balanc
 		return errFind
 	}
 	if balanceFromDB == nil {
-		return balance.AccountNotFound
+		return def.AccountNotFound
 	}
 
 	return psr.ps.paymentRepository.SeedPartialByBalance(subtraction, lastRandId, balanceFromDB)
@@ -137,20 +140,25 @@ func (ps *PaystoreClient) SeedPayment(subtraction int64, lastRandId string, bala
 	return nil
 }
 
-func (ps *PaystoreClient) InitWithdraw(amount int64, balance *balance.Balance) error {
+func (ps *PaystoreClient) InitWithdraw(amount int64, balance *model.Balance) error {
 	errWithdraw := balance.Withdraw(amount)
 	if errWithdraw != nil {
 		return errWithdraw
 	}
 
+	return nil
 }
 
 func New(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient,
-	config *config.App, vendor config.Vendor, organization *organization.Organization) *PaystoreClient {
+	config *config.App, vendorConfig *config.Vendor, organization *model.Organization) *PaystoreClient {
 	var errInit error
 
 	balanceRepo := balance.NewRepository(readDB, redis, config)
-	paymentRepo, errInit := payment.NewRepository(readDB, redis, vendor, organization, config)
+	vendorRepo := vendorRepo.NewVendorRepository()
+	paymentRepo, errInit := payment.NewRepository(readDB, redis, vendorConfig, vendorRepo, organization, config)
+	if errInit != nil {
+		panic(errInit)
+	}
 	if errInit != nil {
 		panic(errInit)
 	}

@@ -3,7 +3,7 @@ package payment
 import (
 	"fmt"
 	"github.com/21strive/redifu"
-	"paystore/helper"
+	"paystore/lib/helper"
 	"testing"
 	"time"
 )
@@ -50,4 +50,6 @@ func TestQueryJoin(t *testing.T) {
 	repository, _ := NewRepository(nil, nil, dummyXendit, nil, nil)
 	finalQuery := repository.JoinBuilder()
 	fmt.Print(finalQuery)
+
+	// seharusnya vendor di define as function yang return vendor kosong
 }

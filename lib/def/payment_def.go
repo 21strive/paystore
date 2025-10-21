@@ -1,4 +1,4 @@
-package payment
+package def
 
 import (
 	"errors"
@@ -7,9 +7,9 @@ import (
 type PaymentStatus string
 
 const (
-	StatusPending PaymentStatus = "pending"
-	StatusPaid    PaymentStatus = "paid"
-	StatusFailed  PaymentStatus = "failed"
+	PaymentStatusPending PaymentStatus = "pending"
+	PaymentStatusPaid    PaymentStatus = "paid"
+	PaymentStatusFailed  PaymentStatus = "failed"
 )
 
 var UnmatchBalance = errors.New("The payment owner must match the account balance.")

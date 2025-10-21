@@ -1,4 +1,4 @@
-package transaction
+package def
 
 type TransactionType string
 

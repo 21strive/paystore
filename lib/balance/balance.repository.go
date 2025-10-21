@@ -5,29 +5,30 @@ import (
 	"github.com/21strive/redifu"
 	"github.com/redis/go-redis/v9"
 	"paystore/config"
-	"paystore/organization"
+	"paystore/lib/def"
+	model2 "paystore/lib/model"
 )
 
 var findByUUIDQuery = `SELECT * FROM balance WHERE uuid = $1;`
 var findByExternalIDQuery = `SELECT * FROM balance WHERE external_id = $1;`
 
 type RepositoryClient interface {
-	Create(tx *sql.Tx, balance *Balance) error
-	Update(tx *sql.Tx, balance *Balance) error
-	FindByUUID(uuid string) (*Balance, error)
-	FindByExternalID(externalID string) (*Balance, error)
-	SeedPartial(subtraction int64, lastRandId string, organization organization.Organization) error
+	Create(tx *sql.Tx, balance *model2.Balance) error
+	Update(tx *sql.Tx, balance *model2.Balance) error
+	FindByUUID(uuid string) (*model2.Balance, error)
+	FindByExternalID(externalID string) (*model2.Balance, error)
+	SeedPartial(subtraction int64, lastRandId string, organization model2.Organization) error
 }
 
 type Repository struct {
-	base                 *redifu.Base[*Balance]
-	timeline             *redifu.Timeline[*Balance]
-	timelineSeeder       *redifu.TimelineSeeder[*Balance]
+	base                 *redifu.Base[*model2.Balance]
+	timeline             *redifu.Timeline[*model2.Balance]
+	timelineSeeder       *redifu.TimelineSeeder[*model2.Balance]
 	findByUUIDStmt       *sql.Stmt
 	findByExternalIDStmt *sql.Stmt
 }
 
-func (br *Repository) Create(tx *sql.Tx, balance *Balance) (err error) {
+func (br *Repository) Create(tx *sql.Tx, balance *model2.Balance) (err error) {
 	query := `INSERT INTO balance 
     (
      uuid, randid, created_at, updated_at, balance, 
@@ -53,7 +54,7 @@ func (br *Repository) Create(tx *sql.Tx, balance *Balance) (err error) {
 	return nil
 }
 
-func (br *Repository) Update(tx *sql.Tx, balance *Balance) (err error) {
+func (br *Repository) Update(tx *sql.Tx, balance *model2.Balance) (err error) {
 	query := `UPDATE balance SET 
 		updated_at = $1, balance = $2, last_receive = $3, last_withdraw = $4, income_accumulation = $5, 
 		withdraw_accumulation = $6, currency = $7, active = $8, external_id = $9, organization_uuid = $10
@@ -75,7 +76,7 @@ func (br *Repository) Update(tx *sql.Tx, balance *Balance) (err error) {
 	return nil
 }
 
-func (br *Repository) FindByUUID(uuid string) (*Balance, error) {
+func (br *Repository) FindByUUID(uuid string) (*model2.Balance, error) {
 	account, errFind := BalanceRowScanner(br.findByUUIDStmt.QueryRow(uuid))
 	if errFind != nil {
 		if errFind == sql.ErrNoRows {
@@ -87,11 +88,11 @@ func (br *Repository) FindByUUID(uuid string) (*Balance, error) {
 	return account, nil
 }
 
-func (br *Repository) FindByExternalID(externalID string) (*Balance, error) {
+func (br *Repository) FindByExternalID(externalID string) (*model2.Balance, error) {
 	account, errFind := BalanceRowScanner(br.findByExternalIDStmt.QueryRow(externalID))
 	if errFind != nil {
 		if errFind == sql.ErrNoRows {
-			return nil, AccountNotFound
+			return nil, def.AccountNotFound
 		}
 		return nil, errFind
 	}
@@ -99,7 +100,7 @@ func (br *Repository) FindByExternalID(externalID string) (*Balance, error) {
 	return account, nil
 }
 
-func (br *Repository) SeedPartial(subtraction int64, lastRandId string, organization organization.Organization) error {
+func (br *Repository) SeedPartial(subtraction int64, lastRandId string, organization model2.Organization) error {
 	baseQuery := `SELECT 
     	uuid, randid, created_at, updated_at, balance, last_receive, last_withdraw, income_accumulation, 
     	withdraw_accumulation, currency, active, external_id, organization_uuid FROM balance`
@@ -113,24 +114,24 @@ func (br *Repository) SeedPartial(subtraction int64, lastRandId string, organiza
 		[]interface{}{organization.GetUUID()}, subtraction, lastRandId, []string{organization.GetRandId()})
 }
 
-func BalanceRowScanner(row *sql.Row) (*Balance, error) {
-	balance := NewAccount()
+func BalanceRowScanner(row *sql.Row) (*model2.Balance, error) {
+	balance := model2.NewAccount()
 	err := row.Scan(balance.ScanDestinations()...)
 
 	return balance, err
 }
 
-func BalanceRowsScanner(rows *sql.Rows) (*Balance, error) {
-	balance := NewAccount()
+func BalanceRowsScanner(rows *sql.Rows) (*model2.Balance, error) {
+	balance := model2.NewAccount()
 	err := rows.Scan(balance.ScanDestinations()...)
 
 	return balance, err
 }
 
 func NewRepository(readDB *sql.DB, redis redis.UniversalClient, config *config.App) *Repository {
-	base := redifu.NewBase[*Balance](redis, "balance:%s", config.RecordAge)
-	timeline := redifu.NewTimeline[*Balance](redis, base, "balance:organization:%s", config.ItemPerPage, redifu.Descending, config.PaginationAge)
-	timelineSeeder := redifu.NewTimelineSeeder[*Balance](readDB, base, timeline)
+	base := redifu.NewBase[*model2.Balance](redis, "balance:%s", config.RecordAge)
+	timeline := redifu.NewTimeline[*model2.Balance](redis, base, "balance:organization:%s", config.ItemPerPage, redifu.Descending, config.PaginationAge)
+	timelineSeeder := redifu.NewTimelineSeeder[*model2.Balance](readDB, base, timeline)
 
 	findByUUIDStmt, err := readDB.Prepare(findByUUIDQuery)
 	if err != nil {

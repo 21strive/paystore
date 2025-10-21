@@ -1,42 +1,44 @@
-package payment
+package model
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/21strive/redifu"
-	"paystore/balance"
-	"paystore/organization"
+	"paystore/lib/def"
+	"paystore/user/vendorspec/model"
 	"time"
 )
 
 type Payment struct {
 	*redifu.Record
-	Amount               int64         `json:"amount"`
-	BalanceBeforePayment int64         `json:"balanceBeforePayment"`
-	BalanceAfterPayment  int64         `json:"balanceAfterPayment"`
-	BalanceUUID          string        `json:"BalanceUUID"`
-	OrganizationUUID     string        `json:"organizationUUID"`
-	VendorRecordID       string        `json:"vendorRecordID"`
-	Status               PaymentStatus `json:"status"`
-	Hash                 string        `json:"hash"`
+	Amount               int64             `json:"amount"`
+	BalanceBeforePayment int64             `json:"balanceBeforePayment"`
+	BalanceAfterPayment  int64             `json:"balanceAfterPayment"`
+	BalanceUUID          string            `json:"BalanceUUID"`
+	OrganizationUUID     string            `json:"organizationUUID"`
+	VendorRecordID       string            `json:"vendorRecordID"`
+	Status               def.PaymentStatus `json:"status"`
+	Hash                 string            `json:"hash"`
+	VendorRandId         string            `json:"vendorRandId,omitempty"`
+	Vendor               model.Vendor      `json:"vendor,omitempty"`
 }
 
-type HashPayload struct {
-	UUID                 string        `json:"uuid"`
-	RandId               string        `json:"randid"`
-	CreatedAt            time.Time     `json:"createdAt"`
-	Amount               int64         `json:"amount"`
-	BalanceBeforePayment int64         `json:"balanceBeforePayment"`
-	BalanceAfterPayment  int64         `json:"balanceAfterPayment"`
-	BalanceUUID          string        `json:"balanceUUID"`
-	OrganizationUUID     string        `json:"organizationUUID"`
-	VendorRecordID       string        `json:"vendorRecordID"`
-	Status               PaymentStatus `json:"status"`
-	PreviousPaymentHash  string        `json:"previousPaymentHash"`
+type PaymentHashPayload struct {
+	UUID                 string            `json:"uuid"`
+	RandId               string            `json:"randid"`
+	CreatedAt            time.Time         `json:"createdAt"`
+	Amount               int64             `json:"amount"`
+	BalanceBeforePayment int64             `json:"balanceBeforePayment"`
+	BalanceAfterPayment  int64             `json:"balanceAfterPayment"`
+	BalanceUUID          string            `json:"balanceUUID"`
+	OrganizationUUID     string            `json:"organizationUUID"`
+	VendorRecordID       string            `json:"vendorRecordID"`
+	Status               def.PaymentStatus `json:"status"`
+	PreviousPaymentHash  string            `json:"previousPaymentHash"`
 }
 
-func (p *Payment) SetBalance(balance *balance.Balance) {
+func (p *Payment) SetBalance(balance *Balance) {
 	p.BalanceUUID = balance.UUID
 }
 
@@ -46,7 +48,7 @@ func (p *Payment) SetAmount(amount int64, currentBalanceAmount int64) {
 	p.BalanceAfterPayment = p.BalanceBeforePayment + p.Amount
 }
 
-func (p *Payment) SetOrganization(organization organization.Organization) {
+func (p *Payment) SetOrganization(organization Organization) {
 	p.OrganizationUUID = organization.UUID
 }
 
@@ -55,7 +57,7 @@ func (p *Payment) SetVendorRecord(uuid string) {
 }
 
 func (p *Payment) GenerateHash(previousPayment *Payment) error {
-	hashPayload := HashPayload{
+	hashPayload := PaymentHashPayload{
 		UUID:                 p.UUID,
 		RandId:               p.RandId,
 		CreatedAt:            p.CreatedAt,
@@ -82,7 +84,7 @@ func (p *Payment) GenerateHash(previousPayment *Payment) error {
 }
 
 func (p *Payment) Verify(previousPayment *Payment) (bool, error) {
-	hashPayload := HashPayload{
+	hashPayload := PaymentHashPayload{
 		UUID:                 p.UUID,
 		RandId:               p.RandId,
 		CreatedAt:            p.CreatedAt,
@@ -122,21 +124,21 @@ func (p *Payment) ScanDestinations() []interface{} {
 }
 
 func (p *Payment) SetPaid() {
-	p.Status = StatusPaid
+	p.Status = def.PaymentStatusPaid
 }
 
 func (p *Payment) SetFailed() {
-	p.Status = StatusFailed
+	p.Status = def.PaymentStatusFailed
 }
 
 func NewPayment() *Payment {
 	payment := &Payment{}
 	redifu.InitRecord(payment)
-	payment.Status = StatusPending
+	payment.Status = def.PaymentStatusPending
 	return payment
 }
 
-func createHash(payload HashPayload) (string, error) {
+func createHash(payload PaymentHashPayload) (string, error) {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
 		return "", err

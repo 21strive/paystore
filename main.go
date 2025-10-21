@@ -1,12 +1,10 @@
-package main
-
-type CommonTransaction interface {
-	GetUUID() string
-}
+package paystore
 
 func main() {
+
 	// setiap record harus punya hashing
 	// adanya PIN untuk auth berbagai action
 	// immutable action only pada masing-masing payment & payout.
 	// transaction hanya as reference saja.
+
 }

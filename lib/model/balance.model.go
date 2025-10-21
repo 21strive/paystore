@@ -1,8 +1,8 @@
-package balance
+package model
 
 import (
 	"github.com/21strive/redifu"
-	"paystore/organization"
+	"paystore/lib/def"
 	"time"
 )
 
@@ -27,7 +27,7 @@ func (ac *Balance) SetOwner(ownerID string) {
 	ac.OwnerID = ownerID
 }
 
-func (ac *Balance) SetOrganization(organization organization.Organization) {
+func (ac *Balance) SetOrganization(organization Organization) {
 	ac.OrganizationUUID = organization.GetUUID()
 }
 
@@ -44,7 +44,7 @@ func (ac *Balance) Collect(amount int64) {
 
 func (ac *Balance) Withdraw(amount int64) error {
 	if amount > ac.Balance {
-		return InsufficientFunds
+		return def.InsufficientFunds
 	}
 
 	ac.Balance -= amount

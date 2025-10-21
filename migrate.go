@@ -1,4 +1,4 @@
-package main
+package paystore
 
 var createTableBalance = `CREATE TABLE balance (
 		uuid VARCHAR(255) PRIMARY KEY,

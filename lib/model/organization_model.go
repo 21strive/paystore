@@ -1,4 +1,4 @@
-package organization
+package model
 
 import (
 	"github.com/21strive/redifu"

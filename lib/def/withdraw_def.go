@@ -1,4 +1,4 @@
-package withdraw
+package def
 
 type WithdrawStatus string
 

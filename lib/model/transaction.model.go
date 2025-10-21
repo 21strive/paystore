@@ -1,27 +1,30 @@
-package transaction
+package model
 
 import (
 	"github.com/21strive/redifu"
-	"paystore"
-	"paystore/balance"
+	"paystore/lib/def"
 )
+
+type CommonTransaction interface {
+	GetUUID() string
+}
 
 type Transaction struct {
 	*redifu.Record
-	Type        TransactionType
+	Type        def.TransactionType
 	RecordUUID  string
 	BalanceUUID string
 }
 
-func (t *Transaction) SetType(transactionType TransactionType) {
+func (t *Transaction) SetType(transactionType def.TransactionType) {
 	t.Type = transactionType
 }
 
-func (t *Transaction) SetRecord(transaction main.CommonTransaction) {
+func (t *Transaction) SetRecord(transaction CommonTransaction) {
 	t.RecordUUID = transaction.GetUUID()
 }
 
-func (t *Transaction) SetBalance(balance balance.Balance) {
+func (t *Transaction) SetBalance(balance Balance) {
 	t.BalanceUUID = balance.UUID
 }
 

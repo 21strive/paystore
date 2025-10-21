@@ -5,6 +5,7 @@ import (
 	"github.com/21strive/redifu"
 	"github.com/redis/go-redis/v9"
 	"paystore/config"
+	"paystore/lib/model"
 )
 
 var createOrganizationQuery = `INSERT INTO organization (name, slug, avatar) VALUES ($1, $2, $3)`
@@ -13,33 +14,33 @@ var findOrganizationByUUIDQuery = `SELECT name, slug, avatar FROM organization W
 var findOrganizationBySlugQuery = `SELECT name, slug, avatar FROM organization WHERE slug = $1`
 
 type RepositoryClient interface {
-	Create(organization *Organization) error
-	Update(organization *Organization) error
-	FindByUUID(uuid string) (*Organization, error)
-	FindBySlug(slug string) (*Organization, error)
+	Create(organization *model.Organization) error
+	Update(organization *model.Organization) error
+	FindByUUID(uuid string) (*model.Organization, error)
+	FindBySlug(slug string) (*model.Organization, error)
 }
 
 type Repository struct {
 	writeDB                    *sql.DB
 	readDB                     *sql.DB
-	base                       *redifu.Base[*Organization]
+	base                       *redifu.Base[*model.Organization]
 	createOrganizationStmt     *sql.Stmt
 	updateOrganizationStmt     *sql.Stmt
 	findOrganizationByUUIDStmt *sql.Stmt
 	findOrganizationBySlugStmt *sql.Stmt
 }
 
-func (or *Repository) Create(organization *Organization) error {
+func (or *Repository) Create(organization *model.Organization) error {
 	_, err := or.createOrganizationStmt.Exec(organization.Name, organization.Slug, organization.Avatar)
 	return err
 }
 
-func (or *Repository) Update(organization *Organization) error {
+func (or *Repository) Update(organization *model.Organization) error {
 	_, err := or.updateOrganizationStmt.Exec(organization.Name, organization.Slug, organization.Avatar, organization.Slug)
 	return err
 }
 
-func (or *Repository) FindByUUID(uuid string) (*Organization, error) {
+func (or *Repository) FindByUUID(uuid string) (*model.Organization, error) {
 	row, errScan := OrganizationRowScanner(or.findOrganizationByUUIDStmt.QueryRow(uuid))
 	if errScan != nil {
 		return nil, errScan
@@ -52,7 +53,7 @@ func (or *Repository) FindByUUID(uuid string) (*Organization, error) {
 	return row, nil
 }
 
-func (or *Repository) FindBySlug(slug string) (*Organization, error) {
+func (or *Repository) FindBySlug(slug string) (*model.Organization, error) {
 	row, errScan := OrganizationRowScanner(or.findOrganizationBySlugStmt.QueryRow(slug))
 	if errScan != nil {
 		return nil, errScan
@@ -65,8 +66,8 @@ func (or *Repository) FindBySlug(slug string) (*Organization, error) {
 	return row, nil
 }
 
-func OrganizationRowScanner(row *sql.Row) (*Organization, error) {
-	org := NewOrganization()
+func OrganizationRowScanner(row *sql.Row) (*model.Organization, error) {
+	org := model.NewOrganization()
 	err := row.Scan(&org.Name, &org.Slug, &org.Avatar)
 	if err != nil {
 		return nil, err
@@ -76,7 +77,7 @@ func OrganizationRowScanner(row *sql.Row) (*Organization, error) {
 }
 
 func NewRepository(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient, config *config.App) *Repository {
-	base := redifu.NewBase[*Organization](redis, "organization:%s", config.RecordAge)
+	base := redifu.NewBase[*model.Organization](redis, "organization:%s", config.RecordAge)
 
 	createOrganizationStmt, err := writeDB.Prepare(createOrganizationQuery)
 	if err != nil {
