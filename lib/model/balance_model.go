@@ -70,7 +70,7 @@ func (ac *Balance) ScanDestinations() []interface{} {
 	}
 }
 
-func NewAccount() *Balance {
+func NewBalance() *Balance {
 	account := &Balance{}
 	redifu.InitRecord(account)
 

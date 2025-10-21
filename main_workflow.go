@@ -116,11 +116,51 @@ func (ps *PaystoreClient) ReceivePayment(request request.ReceivePaymentRequest, 
 }
 
 func (ps *PaystoreClient) CreateBalance(request request.CreateBalanceRequest) (*model.Balance, error) {
+	organizationFromDB, errFind := ps.organizationRepository.FindBySlug(request.OrganizationSlug)
+	if errFind != nil {
+		return nil, errFind
+	}
 
+	newBalance := model.NewBalance()
+	newBalance.OrganizationUUID = organizationFromDB.GetUUID()
+	newBalance.Currency = request.Currency
+	newBalance.Active = true
+
+	errCreate := ps.balanceRepository.Create(newBalance)
+	if errCreate != nil {
+		return nil, errCreate
+	}
+
+	return newBalance, nil
 }
 
 func (ps *PaystoreClient) CreateOrganization(request request.CreateOrganizationRequest) (*model.Organization, error) {
+	organizationFromDB, errFind := ps.organizationRepository.FindBySlug(request.Slug)
+	if errFind != nil {
+		return nil, errFind
+	}
+	if organizationFromDB != nil {
+		return nil, def.DuplicateSlug
+	}
 
+	organizationFromDB, errFind = ps.organizationRepository.FindByName(request.Name)
+	if errFind != nil {
+		return nil, errFind
+	}
+	if organizationFromDB != nil {
+		return nil, def.DuplicateName
+	}
+
+	newOrganization := model.NewOrganization()
+	newOrganization.Name = request.Name
+	newOrganization.Slug = request.Slug
+
+	errCreate := ps.organizationRepository.Create(newOrganization)
+	if errCreate != nil {
+		return nil, errCreate
+	}
+
+	return newOrganization, nil
 }
 
 type PaymentSeeder struct {
@@ -168,7 +208,7 @@ func New(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient,
 	config *config.App) *PaystoreClient {
 	var errInit error
 
-	balanceRepo := balance.NewRepository(readDB, redis, config)
+	balanceRepo := balance.NewRepository(writeDB, readDB, redis, config)
 	vendorRepo := vendorRepo.NewVendorRepository()
 	paymentRepo, errInit := payment.NewRepository(readDB, redis, vendorRepo, config)
 	if errInit != nil {

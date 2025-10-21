@@ -5,19 +5,22 @@ import (
 	"github.com/21strive/redifu"
 	"github.com/redis/go-redis/v9"
 	"paystore/config"
+	"paystore/lib/def"
 	"paystore/lib/model"
 )
 
 var createOrganizationQuery = `INSERT INTO organization (name, slug, avatar) VALUES ($1, $2, $3)`
 var updateOrganizationQuery = `UPDATE organization SET name = $1, slug = $2, avatar = $3 WHERE slug = $4`
-var findOrganizationByUUIDQuery = `SELECT name, slug, avatar FROM organization WHERE uuid = $1`
-var findOrganizationBySlugQuery = `SELECT name, slug, avatar FROM organization WHERE slug = $1`
+var findOrganizationByUUIDQuery = `SELECT * FROM organization WHERE uuid = $1`
+var findOrganizationBySlugQuery = `SELECT * FROM organization WHERE slug = $1`
+var findOrganizationByNameQuery = `SELECT * FROM organization WHERE name = $1`
 
 type RepositoryClient interface {
 	Create(organization *model.Organization) error
 	Update(organization *model.Organization) error
 	FindByUUID(uuid string) (*model.Organization, error)
 	FindBySlug(slug string) (*model.Organization, error)
+	FindByName(name string) (*model.Organization, error)
 }
 
 type Repository struct {
@@ -28,6 +31,7 @@ type Repository struct {
 	updateOrganizationStmt     *sql.Stmt
 	findOrganizationByUUIDStmt *sql.Stmt
 	findOrganizationBySlugStmt *sql.Stmt
+	findOrganizationByNameStmt *sql.Stmt
 }
 
 func (or *Repository) Create(organization *model.Organization) error {
@@ -43,6 +47,9 @@ func (or *Repository) Update(organization *model.Organization) error {
 func (or *Repository) FindByUUID(uuid string) (*model.Organization, error) {
 	row, errScan := OrganizationRowScanner(or.findOrganizationByUUIDStmt.QueryRow(uuid))
 	if errScan != nil {
+		if errScan == sql.ErrNoRows {
+			return nil, def.OrganizationNotFound
+		}
 		return nil, errScan
 	}
 
@@ -66,9 +73,22 @@ func (or *Repository) FindBySlug(slug string) (*model.Organization, error) {
 	return row, nil
 }
 
+func (or *Repository) FindByName(name string) (*model.Organization, error) {
+	row, errScan := OrganizationRowScanner(or.findOrganizationByNameStmt.QueryRow(name))
+	if errScan != nil {
+		return nil, errScan
+	}
+
+	errSet := or.base.Set(row)
+	if errSet != nil {
+		return nil, errSet
+	}
+	return row, nil
+}
+
 func OrganizationRowScanner(row *sql.Row) (*model.Organization, error) {
 	org := model.NewOrganization()
-	err := row.Scan(&org.Name, &org.Slug, &org.Avatar)
+	err := row.Scan(&org.UUID, &org.RandId, &org.CreatedAt, &org.UpdatedAt, &org.Name, &org.Slug, &org.Avatar)
 	if err != nil {
 		return nil, err
 	}
