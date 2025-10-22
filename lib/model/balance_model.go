@@ -15,7 +15,7 @@ type Balance struct {
 	WithdrawAccumulation int64
 	Currency             string
 	Active               bool
-	OwnerID              string
+	ExternalID           string
 	OrganizationUUID     string
 }
 
@@ -23,8 +23,8 @@ func (ac *Balance) SetCurrency(currency string) {
 	ac.Currency = currency
 }
 
-func (ac *Balance) SetOwner(ownerID string) {
-	ac.OwnerID = ownerID
+func (ac *Balance) SetExternalID(externalID string) {
+	ac.ExternalID = externalID
 }
 
 func (ac *Balance) SetOrganization(organization Organization) {
@@ -65,7 +65,7 @@ func (ac *Balance) ScanDestinations() []interface{} {
 		&ac.WithdrawAccumulation,
 		&ac.Currency,
 		&ac.Active,
-		&ac.OwnerID,
+		&ac.ExternalID,
 		&ac.OrganizationUUID,
 	}
 }

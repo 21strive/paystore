@@ -69,7 +69,7 @@ func (Status) EnumDescriptor() ([]byte, []int) {
 
 type CreateBalanceRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	OwnerID          string                 `protobuf:"bytes,1,opt,name=OwnerID,proto3" json:"OwnerID,omitempty"`
+	ExternalID       string                 `protobuf:"bytes,1,opt,name=ExternalID,proto3" json:"ExternalID,omitempty"`
 	OrganizationSlug string                 `protobuf:"bytes,2,opt,name=OrganizationSlug,proto3" json:"OrganizationSlug,omitempty"`
 	Currency         string                 `protobuf:"bytes,3,opt,name=Currency,proto3" json:"Currency,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -106,9 +106,9 @@ func (*CreateBalanceRequest) Descriptor() ([]byte, []int) {
 	return file_command_paystore_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CreateBalanceRequest) GetOwnerID() string {
+func (x *CreateBalanceRequest) GetExternalID() string {
 	if x != nil {
-		return x.OwnerID
+		return x.ExternalID
 	}
 	return ""
 }
@@ -127,28 +127,28 @@ func (x *CreateBalanceRequest) GetCurrency() string {
 	return ""
 }
 
-type ReqeustResponse struct {
+type CreatePaymentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	Status        Status                 `protobuf:"varint,2,opt,name=status,proto3,enum=paystore.Status" json:"status,omitempty"`
+	Amount        string                 `protobuf:"bytes,1,opt,name=Amount,proto3" json:"Amount,omitempty"`
+	AccountUUID   string                 `protobuf:"bytes,2,opt,name=AccountUUID,proto3" json:"AccountUUID,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReqeustResponse) Reset() {
-	*x = ReqeustResponse{}
+func (x *CreatePaymentRequest) Reset() {
+	*x = CreatePaymentRequest{}
 	mi := &file_command_paystore_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReqeustResponse) String() string {
+func (x *CreatePaymentRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReqeustResponse) ProtoMessage() {}
+func (*CreatePaymentRequest) ProtoMessage() {}
 
-func (x *ReqeustResponse) ProtoReflect() protoreflect.Message {
+func (x *CreatePaymentRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_command_paystore_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -160,19 +160,123 @@ func (x *ReqeustResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReqeustResponse.ProtoReflect.Descriptor instead.
-func (*ReqeustResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use CreatePaymentRequest.ProtoReflect.Descriptor instead.
+func (*CreatePaymentRequest) Descriptor() ([]byte, []int) {
 	return file_command_paystore_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ReqeustResponse) GetID() string {
+func (x *CreatePaymentRequest) GetAmount() string {
+	if x != nil {
+		return x.Amount
+	}
+	return ""
+}
+
+func (x *CreatePaymentRequest) GetAccountUUID() string {
+	if x != nil {
+		return x.AccountUUID
+	}
+	return ""
+}
+
+type FinalizedPayment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PaymentID     string                 `protobuf:"bytes,1,opt,name=PaymentID,proto3" json:"PaymentID,omitempty"`
+	Status        Status                 `protobuf:"varint,2,opt,name=status,proto3,enum=paystore.Status" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FinalizedPayment) Reset() {
+	*x = FinalizedPayment{}
+	mi := &file_command_paystore_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FinalizedPayment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FinalizedPayment) ProtoMessage() {}
+
+func (x *FinalizedPayment) ProtoReflect() protoreflect.Message {
+	mi := &file_command_paystore_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FinalizedPayment.ProtoReflect.Descriptor instead.
+func (*FinalizedPayment) Descriptor() ([]byte, []int) {
+	return file_command_paystore_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *FinalizedPayment) GetPaymentID() string {
+	if x != nil {
+		return x.PaymentID
+	}
+	return ""
+}
+
+func (x *FinalizedPayment) GetStatus() Status {
+	if x != nil {
+		return x.Status
+	}
+	return Status_SUCCES
+}
+
+type RequestResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	Status        Status                 `protobuf:"varint,2,opt,name=status,proto3,enum=paystore.Status" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RequestResponse) Reset() {
+	*x = RequestResponse{}
+	mi := &file_command_paystore_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RequestResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RequestResponse) ProtoMessage() {}
+
+func (x *RequestResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_command_paystore_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RequestResponse.ProtoReflect.Descriptor instead.
+func (*RequestResponse) Descriptor() ([]byte, []int) {
+	return file_command_paystore_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RequestResponse) GetID() string {
 	if x != nil {
 		return x.ID
 	}
 	return ""
 }
 
-func (x *ReqeustResponse) GetStatus() Status {
+func (x *RequestResponse) GetStatus() Status {
 	if x != nil {
 		return x.Status
 	}
@@ -183,20 +287,29 @@ var File_command_paystore_proto protoreflect.FileDescriptor
 
 const file_command_paystore_proto_rawDesc = "" +
 	"\n" +
-	"\x16command/paystore.proto\x12\bpaystore\"x\n" +
-	"\x14CreateBalanceRequest\x12\x18\n" +
-	"\aOwnerID\x18\x01 \x01(\tR\aOwnerID\x12*\n" +
+	"\x16command/paystore.proto\x12\bpaystore\"~\n" +
+	"\x14CreateBalanceRequest\x12\x1e\n" +
+	"\n" +
+	"ExternalID\x18\x01 \x01(\tR\n" +
+	"ExternalID\x12*\n" +
 	"\x10OrganizationSlug\x18\x02 \x01(\tR\x10OrganizationSlug\x12\x1a\n" +
-	"\bCurrency\x18\x03 \x01(\tR\bCurrency\"K\n" +
-	"\x0fReqeustResponse\x12\x0e\n" +
+	"\bCurrency\x18\x03 \x01(\tR\bCurrency\"P\n" +
+	"\x14CreatePaymentRequest\x12\x16\n" +
+	"\x06Amount\x18\x01 \x01(\tR\x06Amount\x12 \n" +
+	"\vAccountUUID\x18\x02 \x01(\tR\vAccountUUID\"Z\n" +
+	"\x10FinalizedPayment\x12\x1c\n" +
+	"\tPaymentID\x18\x01 \x01(\tR\tPaymentID\x12(\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x10.paystore.StatusR\x06status\"K\n" +
+	"\x0fRequestResponse\x12\x0e\n" +
 	"\x02ID\x18\x01 \x01(\tR\x02ID\x12(\n" +
 	"\x06status\x18\x02 \x01(\x0e2\x10.paystore.StatusR\x06status*\x1e\n" +
 	"\x06Status\x12\n" +
 	"\n" +
 	"\x06SUCCES\x10\x00\x12\b\n" +
-	"\x04FAIL\x10\x012V\n" +
+	"\x04FAIL\x10\x012\xa2\x01\n" +
 	"\bPaystore\x12J\n" +
-	"\rCreateBalance\x12\x1e.paystore.CreateBalanceRequest\x1a\x19.paystore.ReqeustResponseB\n" +
+	"\rCreateBalance\x12\x1e.paystore.CreateBalanceRequest\x1a\x19.paystore.RequestResponse\x12J\n" +
+	"\rCreatePayment\x12\x1e.paystore.CreatePaymentRequest\x1a\x19.paystore.RequestResponseB\n" +
 	"Z\b./protosb\x06proto3"
 
 var (
@@ -212,21 +325,26 @@ func file_command_paystore_proto_rawDescGZIP() []byte {
 }
 
 var file_command_paystore_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_command_paystore_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_command_paystore_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_command_paystore_proto_goTypes = []any{
 	(Status)(0),                  // 0: paystore.Status
 	(*CreateBalanceRequest)(nil), // 1: paystore.CreateBalanceRequest
-	(*ReqeustResponse)(nil),      // 2: paystore.ReqeustResponse
+	(*CreatePaymentRequest)(nil), // 2: paystore.CreatePaymentRequest
+	(*FinalizedPayment)(nil),     // 3: paystore.FinalizedPayment
+	(*RequestResponse)(nil),      // 4: paystore.RequestResponse
 }
 var file_command_paystore_proto_depIdxs = []int32{
-	0, // 0: paystore.ReqeustResponse.status:type_name -> paystore.Status
-	1, // 1: paystore.Paystore.CreateBalance:input_type -> paystore.CreateBalanceRequest
-	2, // 2: paystore.Paystore.CreateBalance:output_type -> paystore.ReqeustResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // 0: paystore.FinalizedPayment.status:type_name -> paystore.Status
+	0, // 1: paystore.RequestResponse.status:type_name -> paystore.Status
+	1, // 2: paystore.Paystore.CreateBalance:input_type -> paystore.CreateBalanceRequest
+	2, // 3: paystore.Paystore.CreatePayment:input_type -> paystore.CreatePaymentRequest
+	4, // 4: paystore.Paystore.CreateBalance:output_type -> paystore.RequestResponse
+	4, // 5: paystore.Paystore.CreatePayment:output_type -> paystore.RequestResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_command_paystore_proto_init() }
@@ -240,7 +358,7 @@ func file_command_paystore_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_command_paystore_proto_rawDesc), len(file_command_paystore_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

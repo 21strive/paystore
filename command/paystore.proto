@@ -10,9 +10,19 @@ service Paystore {
 }
 
 message CreateBalanceRequest {
-  string OwnerID = 1;
+  string ExternalID = 1;
   string OrganizationSlug = 2;
   string Currency = 3;
+}
+
+message CreatePaymentRequest {
+  string Amount = 1;
+  string AccountUUID = 2;
+}
+
+message FinalizedPayment {
+  string PaymentID = 1;
+  Status status = 2;
 }
 
 message RequestResponse {

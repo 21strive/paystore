@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"github.com/21strive/redifu"
 	"paystore/lib/def"
-	"paystore/user/vendors/model"
+	"paystore/user"
 	"time"
 )
 
@@ -21,7 +21,7 @@ type Payment struct {
 	Status               def.PaymentStatus `json:"status"`
 	Hash                 string            `json:"hash"`
 	VendorRandId         string            `json:"vendorRandId,omitempty"`
-	Vendor               model.Vendor      `json:"vendor,omitempty"`
+	Vendor               user.Vendor       `json:"vendor,omitempty"`
 }
 
 type PaymentHashPayload struct {

@@ -46,7 +46,7 @@ func (br *Repository) Create(balance *model.Balance) (err error) {
 	_, errExec := br.createBalanceStmt.Exec(
 		query, balance.GetUUID(), balance.GetRandId(), balance.GetCreatedAt(), balance.GetUpdatedAt(), balance.Balance,
 		balance.LastReceive, balance.LastWithdraw, balance.IncomeAccumulation, balance.WithdrawAccumulation,
-		balance.Currency, balance.Active, balance.OwnerID, balance.OrganizationUUID)
+		balance.Currency, balance.Active, balance.ExternalID, balance.OrganizationUUID)
 	if errExec != nil {
 		return errExec
 	}
@@ -70,7 +70,7 @@ func (br *Repository) Update(tx *sql.Tx, balance *model.Balance) (err error) {
 	_, errExec := tx.Exec(
 		query, balance.GetUpdatedAt(), balance.Balance, balance.LastReceive, balance.LastWithdraw,
 		balance.IncomeAccumulation, balance.WithdrawAccumulation, balance.Currency, balance.Active,
-		balance.OwnerID, balance.OrganizationUUID, balance.GetUUID())
+		balance.ExternalID, balance.OrganizationUUID, balance.GetUUID())
 	if errExec != nil {
 		return errExec
 	}

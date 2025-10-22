@@ -2,7 +2,7 @@ package config
 
 import (
 	"paystore/lib/helper"
-	"paystore/user/vendors/model"
+	"paystore/user"
 	"time"
 )
 
@@ -12,7 +12,7 @@ type App struct {
 	PaginationAge    time.Duration
 	VendorTableAlias string
 	VendorTableName  string
-	vendorSampleItem *model.Vendor
+	vendorSampleItem *user.Vendor
 }
 
 func (a *App) GetVendorTableAlias() string {
@@ -38,7 +38,7 @@ func DefaultConfig(vendorTableName string) *App {
 		}
 	}
 
-	vendorSampleItem := model.NewVendor()
+	vendorSampleItem := user.NewVendor()
 
 	return &App{
 		ItemPerPage:      50,

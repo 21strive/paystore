@@ -20,13 +20,15 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Paystore_CreateBalance_FullMethodName = "/paystore.Paystore/CreateBalance"
+	Paystore_CreatePayment_FullMethodName = "/paystore.Paystore/CreatePayment"
 )
 
 // PaystoreClient is the client API for Paystore service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PaystoreClient interface {
-	CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*ReqeustResponse, error)
+	CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*RequestResponse, error)
+	CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*RequestResponse, error)
 }
 
 type paystoreClient struct {
@@ -37,10 +39,20 @@ func NewPaystoreClient(cc grpc.ClientConnInterface) PaystoreClient {
 	return &paystoreClient{cc}
 }
 
-func (c *paystoreClient) CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*ReqeustResponse, error) {
+func (c *paystoreClient) CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*RequestResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ReqeustResponse)
+	out := new(RequestResponse)
 	err := c.cc.Invoke(ctx, Paystore_CreateBalance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paystoreClient) CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*RequestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestResponse)
+	err := c.cc.Invoke(ctx, Paystore_CreatePayment_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +63,8 @@ func (c *paystoreClient) CreateBalance(ctx context.Context, in *CreateBalanceReq
 // All implementations must embed UnimplementedPaystoreServer
 // for forward compatibility.
 type PaystoreServer interface {
-	CreateBalance(context.Context, *CreateBalanceRequest) (*ReqeustResponse, error)
+	CreateBalance(context.Context, *CreateBalanceRequest) (*RequestResponse, error)
+	CreatePayment(context.Context, *CreatePaymentRequest) (*RequestResponse, error)
 	mustEmbedUnimplementedPaystoreServer()
 }
 
@@ -62,8 +75,11 @@ type PaystoreServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPaystoreServer struct{}
 
-func (UnimplementedPaystoreServer) CreateBalance(context.Context, *CreateBalanceRequest) (*ReqeustResponse, error) {
+func (UnimplementedPaystoreServer) CreateBalance(context.Context, *CreateBalanceRequest) (*RequestResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBalance not implemented")
+}
+func (UnimplementedPaystoreServer) CreatePayment(context.Context, *CreatePaymentRequest) (*RequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreatePayment not implemented")
 }
 func (UnimplementedPaystoreServer) mustEmbedUnimplementedPaystoreServer() {}
 func (UnimplementedPaystoreServer) testEmbeddedByValue()                  {}
@@ -104,6 +120,24 @@ func _Paystore_CreateBalance_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Paystore_CreatePayment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreatePaymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaystoreServer).CreatePayment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Paystore_CreatePayment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaystoreServer).CreatePayment(ctx, req.(*CreatePaymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Paystore_ServiceDesc is the grpc.ServiceDesc for Paystore service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var Paystore_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateBalance",
 			Handler:    _Paystore_CreateBalance_Handler,
+		},
+		{
+			MethodName: "CreatePayment",
+			Handler:    _Paystore_CreatePayment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
