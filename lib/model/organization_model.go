@@ -6,9 +6,8 @@ import (
 
 type Organization struct {
 	*redifu.Record
-	Name   string
-	Slug   string
-	Avatar string
+	Name string
+	Slug string
 }
 
 func (o *Organization) SetName(name string) {
@@ -17,10 +16,6 @@ func (o *Organization) SetName(name string) {
 
 func (o *Organization) SetSlug(slug string) {
 	o.Slug = slug
-}
-
-func (o *Organization) SetAvatar(avatar string) {
-	o.Avatar = avatar
 }
 
 func NewOrganization() *Organization {

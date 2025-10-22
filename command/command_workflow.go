@@ -1,4 +1,4 @@
-package paystore
+package command
 
 import (
 	"database/sql"

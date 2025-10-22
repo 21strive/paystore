@@ -9,8 +9,10 @@ import (
 	"paystore/lib/model"
 )
 
-var createOrganizationQuery = `INSERT INTO organization (name, slug, avatar) VALUES ($1, $2, $3)`
-var updateOrganizationQuery = `UPDATE organization SET name = $1, slug = $2, avatar = $3 WHERE slug = $4`
+var createOrganizationQuery = `
+	INSERT INTO organization (uuid, randid, created_at, updated_at, name, slug) 
+	VALUES ($1, $2, $3, $4, $5, $6)`
+var updateOrganizationQuery = `UPDATE organization SET name = $1, slug = $2, WHERE uuid = $4`
 var findOrganizationByUUIDQuery = `SELECT * FROM organization WHERE uuid = $1`
 var findOrganizationBySlugQuery = `SELECT * FROM organization WHERE slug = $1`
 var findOrganizationByNameQuery = `SELECT * FROM organization WHERE name = $1`
@@ -35,12 +37,13 @@ type Repository struct {
 }
 
 func (or *Repository) Create(organization *model.Organization) error {
-	_, err := or.createOrganizationStmt.Exec(organization.Name, organization.Slug, organization.Avatar)
+	_, err := or.createOrganizationStmt.Exec(organization.GetUUID(), organization.GetRandId(),
+		organization.GetCreatedAt(), organization.GetUUID(), organization.Name, organization.Slug)
 	return err
 }
 
 func (or *Repository) Update(organization *model.Organization) error {
-	_, err := or.updateOrganizationStmt.Exec(organization.Name, organization.Slug, organization.Avatar, organization.Slug)
+	_, err := or.updateOrganizationStmt.Exec(organization.Name, organization.Slug, organization.GetUUID())
 	return err
 }
 
@@ -88,7 +91,7 @@ func (or *Repository) FindByName(name string) (*model.Organization, error) {
 
 func OrganizationRowScanner(row *sql.Row) (*model.Organization, error) {
 	org := model.NewOrganization()
-	err := row.Scan(&org.UUID, &org.RandId, &org.CreatedAt, &org.UpdatedAt, &org.Name, &org.Slug, &org.Avatar)
+	err := row.Scan(&org.UUID, &org.RandId, &org.CreatedAt, &org.UpdatedAt, &org.Name, &org.Slug)
 	if err != nil {
 		return nil, err
 	}

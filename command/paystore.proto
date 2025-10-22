@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package paystore;
+
+option go_package = "./protos";
+
+service Paystore {
+  rpc CreateBalance (CreateBalanceRequest) returns (RequestResponse);
+  rpc CreatePayment (CreatePaymentRequest) returns (RequestResponse);
+}
+
+message CreateBalanceRequest {
+  string OwnerID = 1;
+  string OrganizationSlug = 2;
+  string Currency = 3;
+}
+
+message RequestResponse {
+  string ID = 1;
+  Status status = 2;
+}
+
+enum Status {
+  SUCCES = 0;
+  FAIL = 1;
+}

@@ -52,9 +52,7 @@ var createTableOrganization = `CREATE TABLE organization (
 		created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 		updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 		name VARCHAR(255) NOT NULL,
-		slug VARCHAR(255) NOT NULL,
-		avatar VARCHAR(255), 
-		BalanceUUID VARCHAR(255)
+		slug VARCHAR(255) NOT NULL
 	);
 `
 
