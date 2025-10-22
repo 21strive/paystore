@@ -9,6 +9,7 @@ import (
 	"paystore/lib/model"
 	"paystore/lib/organization"
 	"paystore/lib/payment"
+	"paystore/lib/transaction"
 )
 
 type OrganizationClient struct {
@@ -19,6 +20,7 @@ type PaystoreClient struct {
 	writeDB                *sql.DB
 	balanceRepository      balance.RepositoryClient
 	paymentRepository      payment.RepositoryClient
+	transcationRepository  transaction.RepositoryClient
 	organizationRepository organization.RepositoryClient
 }
 
@@ -59,15 +61,30 @@ func (ps *PaystoreClient) CreatePayment(accountUUID string, amount int64, vendor
 	newPayment.BalanceUUID = balanceFromDB.GetUUID()
 	newPayment.OrganizationUUID = organizationFromDB.GetUUID()
 
+	newTranscation := model.NewTransaction()
+	newTranscation.SetType(def.TypePayment)
+	newTranscation.SetRecord(newPayment)
+	newTranscation.SetBalance(balanceFromDB)
+
 	tx, errInitTx := ps.writeDB.Begin()
 	if errInitTx != nil {
 		return nil, errInitTx
 	}
 	defer tx.Rollback()
 
-	errCreatePayment := ps.paymentRepository.Create(newPayment, balanceFromDB, organizationFromDB)
+	errCreatePayment := ps.paymentRepository.Create(tx, newPayment, balanceFromDB, organizationFromDB)
 	if errCreatePayment != nil {
 		return nil, errCreatePayment
+	}
+
+	errCreateTransaction := ps.transcationRepository.Create(tx, newTranscation)
+	if errCreateTransaction != nil {
+		return nil, errCreateTransaction
+	}
+
+	errCommit := tx.Commit()
+	if errCommit != nil {
+		return nil, errCommit
 	}
 
 	return newPayment, nil
@@ -120,12 +137,28 @@ func (ps *PaystoreClient) FinalizedPayment(accountUUID string, paymentUUID strin
 	return nil
 }
 
-func (ps *PaystoreClient) CreateWithdraw(amount string) error {
+func (ps *PaystoreClient) CreateWithdraw(accountUUID string, amount int64) error {
+	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
+	if errFind != nil {
+		return errFind
+	}
 
-	//errWithdraw := balanceFromDB.Withdraw(request.Amount)
-	//if errWithdraw != nil {
-	//	return errWithdraw
-	//}
+	if balanceFromDB.Balance < amount {
+		return def.InsufficientFunds
+	}
+
+	tx, errInitTx := ps.writeDB.Begin()
+	if errInitTx != nil {
+		return nil, errInitTx
+	}
+	defer tx.Rollback()
+
+	// TODO: lanjut di sini
+
+	errCommit := tx.Commit()
+	if errCommit != nil {
+		return nil, errCommit
+	}
 
 	return nil
 }
@@ -164,22 +197,21 @@ func New(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient,
 	var errInit error
 
 	balanceRepo := balance.NewRepository(writeDB, readDB, redis, config)
+	transactionRepo := transaction.NewRepository(writeDB, readDB, redis, config)
 	paymentRepo, errInit := payment.NewRepository(readDB, redis, config)
 	if errInit != nil {
 		panic(errInit)
 	}
-	if errInit != nil {
-		panic(errInit)
-	}
 
-	return Client(writeDB, balanceRepo, paymentRepo)
+	return Client(writeDB, balanceRepo, paymentRepo, transactionRepo)
 }
 
 func Client(writeDB *sql.DB, balanceRepository balance.RepositoryClient,
-	paymentRepository payment.RepositoryClient) *PaystoreClient {
+	paymentRepository payment.RepositoryClient, transactionRepository transaction.RepositoryClient) *PaystoreClient {
 	return &PaystoreClient{
-		writeDB:           writeDB,
-		balanceRepository: balanceRepository,
-		paymentRepository: paymentRepository,
+		writeDB:               writeDB,
+		balanceRepository:     balanceRepository,
+		paymentRepository:     paymentRepository,
+		transcationRepository: transactionRepository,
 	}
 }

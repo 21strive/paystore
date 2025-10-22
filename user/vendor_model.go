@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type Vendor struct {
+type PaymentVendor struct {
 	// TODO: Fill attributes of your payment vendor here
 	// This model maps webhook data from your payment provider to your database schema
 	// Customize these fields to match your specific payment vendor's webhook format
@@ -36,10 +36,10 @@ type Vendor struct {
 	PaymentDestination     string    `json:"payment_destination"`
 }
 
-func (v *Vendor) ScanDestinations() []interface{} {
-	// TODO: Fill scan destinations of your Vendor item here
+func (v *PaymentVendor) ScanDestinations() []interface{} {
+	// TODO: Fill scan destinations of your PaymentVendor item here
 	// This function returns pointers to struct fields for database row scanning
-	// The order must exactly match the field order in your Vendor struct definition
+	// The order must exactly match the field order in your PaymentVendor struct definition
 
 	return []interface{}{
 		&v.UUID,
@@ -71,12 +71,12 @@ func (v *Vendor) ScanDestinations() []interface{} {
 	}
 }
 
-func (v *Vendor) GetFields() []string {
+func (v *PaymentVendor) GetFields() []string {
 	return helper.FetchColumns(v)
 }
 
-func NewVendor() *Vendor {
-	vendor := &Vendor{}
+func NewVendor() *PaymentVendor {
+	vendor := &PaymentVendor{}
 	redifu.InitRecord(vendor)
 	return vendor
 }

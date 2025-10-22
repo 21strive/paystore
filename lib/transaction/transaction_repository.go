@@ -3,12 +3,13 @@ package transaction
 import (
 	"database/sql"
 	"github.com/21strive/redifu"
+	"github.com/redis/go-redis/v9"
+	"paystore/config"
 	"paystore/lib/model"
 )
 
 type RepositoryClient interface {
-	Create()
-	SeedPartial()
+	Create(tx *sql.Tx, transaction *model.Transaction) error
 }
 
 type Repository struct {
@@ -33,4 +34,16 @@ func (r *Repository) Create(tx *sql.Tx, transaction *model.Transaction) error {
 
 	r.timelineByBalance.AddItem(transaction, []string{transaction.BalanceUUID})
 	return nil
+}
+
+func NewRepository(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient, config *config.App) *Repository {
+	base := redifu.NewBase[*model.Transaction](redis, "transaction:%s", config.RecordAge)
+	timelineByBalance := redifu.NewTimeline[*model.Transaction](redis, base, "transaction:balance:%s", config.ItemPerPage, redifu.Descending, config.PaginationAge)
+	timelineSeederByBalance := redifu.NewTimelineSeeder[*model.Transaction](readDB, base, timelineByBalance)
+
+	return &Repository{
+		base:                    base,
+		timelineByBalance:       timelineByBalance,
+		timelineSeederByBalance: timelineSeederByBalance,
+	}
 }

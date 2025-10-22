@@ -12,16 +12,16 @@ import (
 
 type Payment struct {
 	*redifu.Record
-	Amount               int64             `json:"amount"`
-	BalanceBeforePayment int64             `json:"balanceBeforePayment"`
-	BalanceAfterPayment  int64             `json:"balanceAfterPayment"`
-	BalanceUUID          string            `json:"BalanceUUID"`
-	OrganizationUUID     string            `json:"organizationUUID"`
-	VendorRecordID       string            `json:"vendorRecordID"`
-	Status               def.PaymentStatus `json:"status"`
-	Hash                 string            `json:"hash"`
-	VendorRandId         string            `json:"vendorRandId,omitempty"`
-	Vendor               user.Vendor       `json:"vendor,omitempty"`
+	Amount               int64              `json:"amount"`
+	BalanceBeforePayment int64              `json:"balanceBeforePayment"`
+	BalanceAfterPayment  int64              `json:"balanceAfterPayment"`
+	BalanceUUID          string             `json:"BalanceUUID"`
+	OrganizationUUID     string             `json:"organizationUUID"`
+	VendorRecordID       string             `json:"vendorRecordID"`
+	Status               def.PaymentStatus  `json:"status"`
+	Hash                 string             `json:"hash"`
+	PaymentVendorRandId  string             `json:"vendorRandId,omitempty"`
+	PaymentVendor        user.PaymentVendor `json:"vendor,omitempty"`
 }
 
 type PaymentHashPayload struct {

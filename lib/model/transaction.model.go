@@ -24,7 +24,7 @@ func (t *Transaction) SetRecord(transaction CommonTransaction) {
 	t.RecordUUID = transaction.GetUUID()
 }
 
-func (t *Transaction) SetBalance(balance Balance) {
+func (t *Transaction) SetBalance(balance *Balance) {
 	t.BalanceUUID = balance.UUID
 }
 

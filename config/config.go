@@ -12,7 +12,7 @@ type App struct {
 	PaginationAge    time.Duration
 	VendorTableAlias string
 	VendorTableName  string
-	vendorSampleItem *user.Vendor
+	vendorSampleItem *user.PaymentVendor
 }
 
 func (a *App) GetVendorTableAlias() string {

@@ -13,15 +13,9 @@ import (
 var firstPartSelectQuery = `SELECT p.uuid, p.randid, p.created_at, p.updated_at, p.amount, p.balance_before_payment, p.balance_after_payment, p.balance_uuid, p.organization_uuid, p.hash,`
 var findLatestPaymentQuery = firstPartSelectQuery + `FROM payment p WHERE p.balance_uuid = $1 ORDER BY created_at DESC LIMIT 1;`
 var findPaymentByUUIDQuery = firstPartSelectQuery + `FROM payment p WHERE p.uuid = $1;`
-var createPaymentQuery = `
-		INSERT INTO payment (
-			uuid, randid, created_at, updated_at,
-			amount, balance_before_payment, balance_after_payment,
-			balance_uuid, organization_uuid, vendor_record_id, status, hash
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 
 type RepositoryClient interface {
-	Create(payment *model.Payment, balance *model.Balance, organization *model.Organization) error
+	Create(tx *sql.Tx, payment *model.Payment, balance *model.Balance, organization *model.Organization) error
 	Update(tx *sql.Tx, payment *model.Payment) error
 	FindLatestPayment(balance *model.Balance) (*model.Payment, error)
 	FindByUUID(uuid string) (*model.Payment, error)
@@ -37,15 +31,21 @@ type Repository struct {
 	AppConfig               *config.App
 	findLatestPaymentStmt   *sql.Stmt
 	findPaymentByUUIDStmt   *sql.Stmt
-	createPaymentStmt       *sql.Stmt
 }
 
-func (br *Repository) Create(payment *model.Payment, balance *model.Balance, organization *model.Organization) error {
+func (br *Repository) Create(tx *sql.Tx, payment *model.Payment, balance *model.Balance, organization *model.Organization) error {
 	if payment.BalanceUUID != balance.UUID {
 		return def.UnmatchBalance
 	}
 
-	_, err := br.createPaymentStmt.Exec(
+	createPaymentQuery := `
+		INSERT INTO payment (
+			uuid, randid, created_at, updated_at,
+			amount, balance_before_payment, balance_after_payment,
+			balance_uuid, organization_uuid, vendor_record_id, status, hash
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+	_, err := tx.Exec(
+		createPaymentQuery,
 		payment.GetUUID(),
 		payment.GetRandId(),
 		payment.GetCreatedAt(),
@@ -158,7 +158,7 @@ func NewRepository(readDB *sql.DB, redis redis.UniversalClient, appConfig *confi
 
 	vendorRepo := NewVendorRepository(redis, appConfig)
 
-	vendorRelation := redifu.NewRelation[*vendorModel.Vendor](vendorRepo.GetBase(), "Vendor", "VendorRandId")
+	vendorRelation := redifu.NewRelation[*vendorModel.PaymentVendor](vendorRepo.GetBase(), "PaymentVendor", "PaymentVendorRandId")
 
 	basePayment := redifu.NewBase[*model.Payment](redis, "payment:%s", appConfig.RecordAge)
 	timelineByAccount := redifu.NewTimeline[*model.Payment](redis, basePayment, "payment:organization:%s:account:%s", appConfig.ItemPerPage, redifu.Descending, appConfig.PaginationAge)
@@ -173,10 +173,6 @@ func NewRepository(readDB *sql.DB, redis redis.UniversalClient, appConfig *confi
 	if err != nil {
 		panic(err)
 	}
-	createPaymentStmt, err := readDB.Prepare(createPaymentQuery)
-	if err != nil {
-		panic(err)
-	}
 
 	return &Repository{
 		base:                    basePayment,
@@ -185,7 +181,6 @@ func NewRepository(readDB *sql.DB, redis redis.UniversalClient, appConfig *confi
 		AppConfig:               appConfig,
 		findLatestPaymentStmt:   findLatestPaymentStmt,
 		findPaymentByUUIDStmt:   findPaymentByUUIDStmt,
-		createPaymentStmt:       createPaymentStmt,
 	}, nil
 }
 
@@ -234,15 +229,15 @@ func PaymentRowsScanner(rows *sql.Rows, relation map[string]redifu.Relation) (*m
 }
 
 type VendorRepository struct {
-	base *redifu.Base[*vendorModel.Vendor]
+	base *redifu.Base[*vendorModel.PaymentVendor]
 }
 
-func (r *VendorRepository) GetBase() *redifu.Base[*vendorModel.Vendor] {
+func (r *VendorRepository) GetBase() *redifu.Base[*vendorModel.PaymentVendor] {
 	return r.base
 }
 
 func NewVendorRepository(redis redis.UniversalClient, config *config.App) *VendorRepository {
-	base := redifu.NewBase[*vendorModel.Vendor](redis, "vendor-item:%s", config.RecordAge)
+	base := redifu.NewBase[*vendorModel.PaymentVendor](redis, "vendor-item:%s", config.RecordAge)
 	return &VendorRepository{
 		base: base,
 	}
