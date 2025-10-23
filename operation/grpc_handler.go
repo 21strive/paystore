@@ -1,4 +1,4 @@
-package command
+package operation
 
 import (
 	"context"
@@ -11,6 +11,8 @@ import (
 	- CreateBalance
 	- CreatePayment
 	- FinalizedPayment
+	- CreateWithdraw
+	- FinalizedWithdraw
 */
 type GRPCHandler struct {
 	pb.UnimplementedPaystoreServer

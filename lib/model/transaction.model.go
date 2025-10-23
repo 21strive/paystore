@@ -11,13 +11,13 @@ type CommonTransaction interface {
 
 type Transaction struct {
 	*redifu.Record
-	Type        def.TransactionType
-	RecordUUID  string
-	BalanceUUID string
+	TransactionType def.TransactionType `json:"transcationType"`
+	RecordUUID      string              `json:"recordUUID"`
+	BalanceUUID     string              `json:"balanceUUID"`
 }
 
 func (t *Transaction) SetType(transactionType def.TransactionType) {
-	t.Type = transactionType
+	t.TransactionType = transactionType
 }
 
 func (t *Transaction) SetRecord(transaction CommonTransaction) {

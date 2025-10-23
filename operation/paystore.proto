@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package paystore;
+
+option go_package = "./protos";
+
+service Paystore {
+  rpc CreateBalance (CreateBalanceRequest) returns (RequestResponse);
+  rpc CreatePayment (CreatePaymentRequest) returns (RequestResponse);
+  rpc FinalizedPayment (FinalizedPaymentRequest) returns (RequestResponse);
+  rpc CreateWithdraw (CreateWithdrawRequest) returns (RequestResponse);
+  rpc FinalizedWithdraw (FinalizedWithdrawRequest) returns (RequestResponse);
+}
+
+message CreateBalanceRequest {
+  string ExternalID = 1;
+  string OrganizationSlug = 2;
+  string Currency = 3;
+}
+
+message CreatePaymentRequest {
+  string AccountUUID = 1;
+  string Amount = 2;
+  string VendorRecordId = 3;
+}
+
+message FinalizedPaymentRequest {
+  string AccountUUID = 1;
+  string PaymentUUID = 2;
+  Status PaymentStatus = 3;
+}
+
+message CreateWithdrawRequest {
+  string AccountUUID = 1;
+  string amount = 2;
+  string VendorRecordId = 3;
+}
+
+message FinalizedWithdrawRequest {
+  string AccountUUId = 1;
+  string WithdrawUUID = 2;
+  Status WithdrawStatus = 3;
+}
+
+message RequestResponse {
+  string ID = 1;
+  Status status = 2;
+}
+
+enum Status {
+  SUCCES = 0;
+  FAIL = 1;
+}

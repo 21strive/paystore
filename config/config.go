@@ -7,45 +7,73 @@ import (
 )
 
 type App struct {
-	ItemPerPage      int64
-	RecordAge        time.Duration
-	PaginationAge    time.Duration
-	VendorTableAlias string
-	VendorTableName  string
-	vendorSampleItem *user.PaymentVendor
+	ItemPerPage              int64
+	RecordAge                time.Duration
+	PaginationAge            time.Duration
+	PaymentVendorTableAlias  string
+	PaymentVendorTableName   string
+	paymentVendorSampleItem  *user.PaymentVendor
+	WithdrawVendorTableAlias string
+	WithdrawVendorTableName  string
+	withdrawVendorSampleItem *user.WithdrawVendor
 }
 
-func (a *App) GetVendorTableAlias() string {
-	return a.VendorTableAlias
+func (a *App) GetPaymentVendorTableAlias() string {
+	return a.PaymentVendorTableAlias
 }
 
-func (a *App) GetVendorTableName() string {
-	return a.VendorTableName
+func (a *App) GetPaymentVendorTableName() string {
+	return a.PaymentVendorTableName
 }
 
-func (a *App) GetFields() []string {
-	return helper.FetchColumns(a.vendorSampleItem)
+func (a *App) GetPaymentVendorModelFields() []string {
+	return helper.FetchColumns(a.paymentVendorSampleItem)
 }
 
-func DefaultConfig(vendorTableName string) *App {
-	var vendorTableAlias string
-	if len(vendorTableName) > 0 {
-		firstChar := string(vendorTableName[0])
+func (a *App) GetWithdrawVendorTableAlias() string {
+	return a.WithdrawVendorTableAlias
+}
+
+func (a *App) GetWithdrawVendorTableName() string {
+	return a.WithdrawVendorTableName
+}
+
+func (a *App) GetWithdrawVendorModelFields() []string {
+	return helper.FetchColumns(a.withdrawVendorSampleItem)
+}
+
+func DefaultConfig(paymentVendorTableName string, withdrawVendorTableName string) *App {
+	var paymentVendorTableAlias string
+	var withdrawVendorTableAlias string
+
+	if len(paymentVendorTableName) > 0 {
+		firstChar := string(paymentVendorTableName[0])
 		if firstChar == "p" {
-			vendorTableAlias = "v"
+			paymentVendorTableAlias = "q"
 		} else {
-			vendorTableAlias = firstChar
+			paymentVendorTableAlias = firstChar
 		}
 	}
 
-	vendorSampleItem := user.NewVendor()
+	if len(withdrawVendorTableName) > 0 {
+		firstChar := string(withdrawVendorTableName[0])
+		if firstChar == "w" {
+			withdrawVendorTableAlias = "x"
+		}
+	}
+
+	paymentVendorSampleItem := user.NewPaymentVendor()
+	withdrawVendorSampleItem := user.NewWithdrawVendor()
 
 	return &App{
-		ItemPerPage:      50,
-		RecordAge:        time.Hour * 12,
-		PaginationAge:    time.Hour * 24,
-		VendorTableName:  vendorTableName,
-		VendorTableAlias: vendorTableAlias,
-		vendorSampleItem: vendorSampleItem,
+		ItemPerPage:              50,
+		RecordAge:                time.Hour * 12,
+		PaginationAge:            time.Hour * 24,
+		PaymentVendorTableName:   paymentVendorTableName,
+		PaymentVendorTableAlias:  paymentVendorTableAlias,
+		paymentVendorSampleItem:  paymentVendorSampleItem,
+		WithdrawVendorTableAlias: withdrawVendorTableAlias,
+		WithdrawVendorTableName:  withdrawVendorTableName,
+		withdrawVendorSampleItem: withdrawVendorSampleItem,
 	}
 }

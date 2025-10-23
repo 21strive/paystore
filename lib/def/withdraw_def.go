@@ -1,5 +1,7 @@
 package def
 
+import "errors"
+
 type WithdrawStatus string
 
 const (
@@ -7,3 +9,5 @@ const (
 	StatusSuccess WithdrawStatus = "success"
 	StatusFailed  WithdrawStatus = "failed"
 )
+
+var WithdrawNotFound = errors.New("Withdraw not found")

@@ -36,9 +36,13 @@ func (w *Withdraw) SetBalance(balance *Balance) {
 	w.BalanceUUID = balance.UUID
 }
 
-func (w *Withdraw) SetAmount(amount int64) {}
+func (w *Withdraw) SetAmount(amount int64, currentBalanceAmount int64) {
+	w.Amount = amount
+	w.BalanceBeforePayment = currentBalanceAmount
+	w.BalanceAfterPayment = w.BalanceBeforePayment - w.Amount
+}
 
-func (w *Withdraw) SetOrganization(organization Organization) {
+func (w *Withdraw) SetOrganization(organization *Organization) {
 	w.OrganizationUUID = organization.UUID
 }
 
@@ -69,4 +73,11 @@ func (w *Withdraw) ScanDestinations() []interface{} {
 		&w.Status,
 		&w.Hash,
 	}
+}
+
+func NewWithdraw() *Withdraw {
+	withdraw := &Withdraw{}
+	redifu.InitRecord(withdraw)
+	withdraw.Status = def.StatusPending
+	return withdraw
 }

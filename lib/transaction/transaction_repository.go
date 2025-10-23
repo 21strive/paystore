@@ -22,7 +22,7 @@ func (r *Repository) Create(tx *sql.Tx, transaction *model.Transaction) error {
 	query := `INSERT INTO transaction (uuid, randid, created_at, updated_at, transaction_type, record_uuid, balance_uuid) VALUES ($1, $2, $3, $4, $5, $6, $7)`
 
 	_, errExec := tx.Exec(query, transaction.GetUUID(), transaction.GetRandId(), transaction.GetCreatedAt(),
-		transaction.GetUpdatedAt(), transaction.Type, transaction.RecordUUID, transaction.BalanceUUID)
+		transaction.GetUpdatedAt(), transaction.TransactionType, transaction.RecordUUID, transaction.BalanceUUID)
 	if errExec != nil {
 		return errExec
 	}

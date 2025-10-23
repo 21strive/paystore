@@ -65,3 +65,17 @@ var createTableTransaction = `CREATE TABLE transaction (
 		record_uuid VARCHAR(255) NOT NULL, 
 		balance_uuid VARCHAR(255) NOT NULL
  	);`
+
+var createTableWithdraw = `CREATE TABLE withdraw (
+		uuid VARCHAR(255) PRIMARY KEY, 
+		randid VARCHAR(255) NOT NULL, 
+		created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
+		updated_at TIMESTAMP NOT NULL DEFAULT NOW(), 
+		amount BIGINT NOT NULL, 
+		balance_before_withdraw BIGINT NOT NULL, 
+		balance_after_withdraw BIGINT NOT NULL, 
+		balance_uuid VARCHAR(255) NOT NULL, 
+		vendor_record_id VARCHAR(255) NOT NULL, 
+		status VARCHAR(20) NOT NULL, 
+		hash VARCHAR(255) NOT NULL
+);`

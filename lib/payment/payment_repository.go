@@ -6,6 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"paystore/config"
 	"paystore/lib/def"
+	"paystore/lib/helper"
 	"paystore/lib/model"
 	vendorModel "paystore/user"
 )
@@ -20,7 +21,6 @@ type RepositoryClient interface {
 	FindLatestPayment(balance *model.Balance) (*model.Payment, error)
 	FindByUUID(uuid string) (*model.Payment, error)
 	SeedPartialByBalance(subtraction int64, lastRandId string, balance *model.Balance) error
-	SeedAll() error
 }
 
 type Repository struct {
@@ -77,38 +77,16 @@ func (br *Repository) Create(tx *sql.Tx, payment *model.Payment, balance *model.
 }
 
 func (br *Repository) Update(tx *sql.Tx, payment *model.Payment) error {
-
-	query := `UPDATE payment SET updated_at = $1, organization_uuid = $2, vendor_record_id = $3, status = $4, hash = $5 WHERE uuid = $6`
-	_, errExec := tx.Exec(query, payment.GetUpdatedAt(), payment.OrganizationUUID, payment.VendorRecordID, payment.Status, payment.Hash, payment.GetUUID())
+	query := `UPDATE payment SET updated_at = $1, organization_uuid = $2, 
+                   vendor_record_id = $3, status = $4, hash = $5 WHERE uuid = $6`
+	_, errExec := tx.Exec(query, payment.GetUpdatedAt(), payment.OrganizationUUID, payment.VendorRecordID,
+		payment.Status, payment.Hash, payment.GetUUID())
 	if errExec != nil {
 		return errExec
 	}
 
 	br.base.Set(payment)
 	return nil
-}
-
-func (br *Repository) JoinBuilder() string {
-	var finalQuery string
-
-	finalQuery += firstPartSelectQuery
-	finalQuery += ` `
-
-	if br.AppConfig != nil {
-		fields := br.AppConfig.GetFields()
-		for _, field := range fields {
-			finalQuery += br.AppConfig.GetVendorTableAlias() + "." + field + ", "
-		}
-
-		finalQuery += `FROM payment p`
-		finalQuery += ` `
-		finalQuery += `LEFT JOIN ` + br.AppConfig.GetVendorTableName() + ` ` + br.AppConfig.GetVendorTableAlias()
-		finalQuery += ` `
-	} else {
-		finalQuery += `FROM payment p`
-	}
-
-	return finalQuery
 }
 
 func (br *Repository) FindLatestPayment(balance *model.Balance) (*model.Payment, error) {
@@ -127,7 +105,7 @@ func (br *Repository) FindByUUID(uuid string) (*model.Payment, error) {
 	payment, err := PaymentRowScanner(br.findPaymentByUUIDStmt.QueryRow(uuid))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, def.PaymentNotFound
 		}
 		return nil, err
 	}
@@ -136,17 +114,15 @@ func (br *Repository) FindByUUID(uuid string) (*model.Payment, error) {
 }
 
 func (br *Repository) SeedPartialByBalance(subtraction int64, lastRandId string, balance *model.Balance) error {
-	joinedQuery := br.JoinBuilder()
+	joinedQuery := helper.JoinBuilder(firstPartSelectQuery, def.TypePayment, br.AppConfig)
 
 	rowQuery := joinedQuery + " WHERE p.randid = $1"
 	firstPageQuery := joinedQuery + " WHERE p.balance_uuid = $1 ORDER BY created_at DESC"
 	nextPageQuery := joinedQuery + " WHERE p.balance_uuid = $1 AND created_at < $2 ORDER BY created_at DESC"
 
-	return br.timelineByAccountSeeder.SeedPartialWithRelation(rowQuery, firstPageQuery, nextPageQuery, PaymentRowScanner, PaymentRowsScanner, []interface{}{balance.GetUUID()}, subtraction, lastRandId, []string{balance.GetRandId()})
-}
-
-func (br *Repository) SeedAll() error {
-	return nil
+	return br.timelineByAccountSeeder.SeedPartialWithRelation(rowQuery, firstPageQuery, nextPageQuery,
+		PaymentRowScanner, PaymentRowsScanner, []interface{}{balance.GetUUID()},
+		subtraction, lastRandId, []string{balance.GetRandId()})
 }
 
 func NewRepository(readDB *sql.DB, redis redis.UniversalClient, appConfig *config.App) (*Repository, error) {
@@ -158,10 +134,13 @@ func NewRepository(readDB *sql.DB, redis redis.UniversalClient, appConfig *confi
 
 	vendorRepo := NewVendorRepository(redis, appConfig)
 
-	vendorRelation := redifu.NewRelation[*vendorModel.PaymentVendor](vendorRepo.GetBase(), "PaymentVendor", "PaymentVendorRandId")
+	vendorRelation := redifu.NewRelation[*vendorModel.PaymentVendor](vendorRepo.GetBase(),
+		"PaymentVendor", "PaymentVendorRandId")
 
 	basePayment := redifu.NewBase[*model.Payment](redis, "payment:%s", appConfig.RecordAge)
-	timelineByAccount := redifu.NewTimeline[*model.Payment](redis, basePayment, "payment:organization:%s:account:%s", appConfig.ItemPerPage, redifu.Descending, appConfig.PaginationAge)
+	timelineByAccount := redifu.NewTimeline[*model.Payment](redis, basePayment,
+		"payment:organization:%s:balance:%s", appConfig.ItemPerPage,
+		redifu.Descending, appConfig.PaginationAge)
 	timelineByAccount.AddRelation("vendor", vendorRelation)
 	timelineByAccountSeeder := redifu.NewTimelineSeeder[*model.Payment](readDB, basePayment, timelineByAccount)
 
@@ -185,38 +164,20 @@ func NewRepository(readDB *sql.DB, redis redis.UniversalClient, appConfig *confi
 }
 
 func PaymentRowScanner(row *sql.Row) (*model.Payment, error) {
-
 	payment := model.NewPayment()
-
-	err := row.Scan(
-		&payment.UUID,
-		&payment.RandId,
-		&payment.CreatedAt,
-		&payment.UpdatedAt,
-		&payment.Amount,
-		&payment.BalanceBeforePayment,
-		&payment.BalanceAfterPayment,
-		&payment.BalanceUUID,
-		&payment.OrganizationUUID,
-		&payment.VendorRecordID,
-		&payment.Status,
-		&payment.Hash,
-	)
-
+	err := row.Scan(payment.ScanDestinations()...)
 	return payment, err
 }
 
 func PaymentRowsScanner(rows *sql.Rows, relation map[string]redifu.Relation) (*model.Payment, error) {
-
 	payment := model.NewPayment()
-	paymentVendor := vendorModel.NewVendor()
+	paymentVendor := vendorModel.NewPaymentVendor()
 
-	var scanDestionations []interface{}
+	var scanDestinations []interface{}
+	scanDestinations = append(scanDestinations, payment.ScanDestinations()...)
+	scanDestinations = append(scanDestinations, paymentVendor.ScanDestinations()...)
 
-	scanDestionations = append(scanDestionations, payment.ScanDestinations()...)
-	scanDestionations = append(scanDestionations, paymentVendor.ScanDestinations()...)
-
-	err := rows.Scan(scanDestionations)
+	err := rows.Scan(scanDestinations)
 
 	if paymentVendor.UUID != "" {
 		errSet := relation["vendor"].SetItem(paymentVendor)

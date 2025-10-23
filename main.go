@@ -3,10 +3,10 @@ package paystore
 import (
 	"github.com/gofiber/fiber/v2"
 	"os"
-	"paystore/command"
 	"paystore/config"
 	"paystore/fetch"
 	"paystore/lib/helper"
+	"paystore/operation"
 )
 
 func main() {
@@ -23,11 +23,9 @@ func main() {
 
 	config := config.DefaultConfig(os.Getenv("VENDOR_TABLE_NAME"))
 
-	client := command.New(writeDB, readDB, redis, config)
-	httpClient := command.NewHTTPHandler(client)
+	client := operation.New(writeDB, readDB, redis, config)
 
 	app := fiber.New()
-	app.Post("/webhook/xendit", httpClient.ReceivePayment)
 
 	app.Listen(":" + os.Getenv("PORT"))
 }
