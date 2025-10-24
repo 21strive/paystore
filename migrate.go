@@ -1,6 +1,7 @@
-package paystore
+package main
 
-var createTableBalance = `CREATE TABLE balance (
+var createTableBalance = `
+	CREATE TABLE balance (
 		uuid VARCHAR(255) PRIMARY KEY,
 		randid VARCHAR(255) NOT NULL,
 		created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -31,6 +32,7 @@ var createTableQuery = `
 		
 			-- Fields from Payment
 			amount BIGINT NOT NULL,
+			fees BIGINT NOT NULL,
 			balance_before_payment BIGINT NOT NULL,
 			balance_after_payment BIGINT NOT NULL,
 			balance_uuid VARCHAR(255) NOT NULL,
@@ -46,17 +48,21 @@ var createTableQuery = `
 		CREATE INDEX idx_payments_hash ON payment(hash);
 `
 
-var createTableOrganization = `CREATE TABLE organization (
+var createTableOrganization = `
+	CREATE TABLE organization (
 		uuid VARCHAR(255) PRIMARY KEY,
 		randid VARCHAR(255) NOT NULL,
-		created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+		created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
 		updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 		name VARCHAR(255) NOT NULL,
-		slug VARCHAR(255) NOT NULL
+		slug VARCHAR(255) NOT NULL,
+		fees_constant BIGINT NOT NULL DEFAULT 0,
+		fees_type VARCHAR(20) NOT NULL
 	);
 `
 
-var createTableTransaction = `CREATE TABLE transaction (
+var createTableTransaction = `
+	CREATE TABLE transaction (
 		uuid VARCHAR(255) PRIMARY KEY, 
 		randid VARCHAR(255) NOT NULL, 
 		created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
@@ -66,7 +72,8 @@ var createTableTransaction = `CREATE TABLE transaction (
 		balance_uuid VARCHAR(255) NOT NULL
  	);`
 
-var createTableWithdraw = `CREATE TABLE withdraw (
+var createTableWithdraw = `
+	CREATE TABLE withdraw (
 		uuid VARCHAR(255) PRIMARY KEY, 
 		randid VARCHAR(255) NOT NULL, 
 		created_at TIMESTAMP NOT NULL DEFAULT NOW(), 
@@ -75,7 +82,8 @@ var createTableWithdraw = `CREATE TABLE withdraw (
 		balance_before_withdraw BIGINT NOT NULL, 
 		balance_after_withdraw BIGINT NOT NULL, 
 		balance_uuid VARCHAR(255) NOT NULL, 
+		organization_uuid VARCHAR(255) NOT NULL,
 		vendor_record_id VARCHAR(255) NOT NULL, 
 		status VARCHAR(20) NOT NULL, 
 		hash VARCHAR(255) NOT NULL
-);`
+	);`

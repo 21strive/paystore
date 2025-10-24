@@ -1,9 +1,5 @@
 package balance
 
-import (
-	"paystore/lib/model"
-)
-
 type Fetcher struct {
 }
 
@@ -19,7 +15,7 @@ func (bf *Fetcher) IsBlankByExternalID(externalID string) bool {
 	return false
 }
 
-func (bf *Fetcher) FetchPartial(lastRandId []string) ([]model.Balance, error) {
+func (bf *Fetcher) FetchPartial(lastRandId []string) ([]Balance, error) {
 	return nil, nil
 }
 

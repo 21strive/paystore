@@ -1,4 +1,4 @@
-package def
+package withdraw
 
 import "errors"
 

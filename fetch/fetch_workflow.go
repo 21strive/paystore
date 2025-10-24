@@ -3,7 +3,6 @@ package fetch
 import (
 	"github.com/redis/go-redis/v9"
 	"paystore/config"
-	"paystore/lib/model"
 	"paystore/lib/payment"
 )
 
@@ -11,7 +10,7 @@ type PaystoreFetcher struct {
 	paymentFetcher payment.FetcherClient
 }
 
-func (pf *PaystoreFetcher) FetchByBalance(lastRandId []string, balanceUUID string) ([]*model.Payment, *string, *string, bool, error) {
+func (pf *PaystoreFetcher) FetchByBalance(lastRandId []string, balanceUUID string) ([]*payment.Payment, *string, *string, bool, error) {
 	isBlank, err := pf.paymentFetcher.IsBlankByBalance(balanceUUID)
 	if err != nil {
 		return nil, nil, nil, false, err

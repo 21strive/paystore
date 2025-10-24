@@ -2,7 +2,9 @@ package operation
 
 import (
 	"context"
-	"paystore/lib/def"
+	"paystore/lib/organization"
+	"paystore/lib/payment"
+	"paystore/lib/withdraw"
 	pb "paystore/protos"
 )
 
@@ -14,29 +16,29 @@ import (
 	- CreateWithdraw
 	- FinalizedWithdraw
 */
-func pbToGoPaymentStatus(pbStatus pb.PaymentStatus) def.PaymentStatus {
+func pbToGoPaymentStatus(pbStatus pb.PaymentStatus) payment.PaymentStatus {
 	switch pbStatus {
 	case pb.PaymentStatus_PAYMENT_STATUS_PENDING:
-		return def.PaymentStatusPending
+		return payment.PaymentStatusPending
 	case pb.PaymentStatus_PAYMENT_STATUS_PAID:
-		return def.PaymentStatusPaid
+		return payment.PaymentStatusPaid
 	case pb.PaymentStatus_PAYMENT_STATUS_FAILED:
-		return def.PaymentStatusFailed
+		return payment.PaymentStatusFailed
 	default:
-		return def.PaymentStatusPending // or handle error
+		return payment.PaymentStatusPending // or handle error
 	}
 }
 
-func pbToGoWithdrawStatus(pbStatus pb.PaymentStatus) def.WithdrawStatus {
+func pbToGoWithdrawStatus(pbStatus pb.PaymentStatus) withdraw.WithdrawStatus {
 	switch pbStatus {
 	case pb.PaymentStatus_PAYMENT_STATUS_PENDING:
-		return def.StatusPending
+		return withdraw.StatusPending
 	case pb.PaymentStatus_PAYMENT_STATUS_PAID:
-		return def.StatusSuccess
+		return withdraw.StatusSuccess
 	case pb.PaymentStatus_PAYMENT_STATUS_FAILED:
-		return def.StatusFailed
+		return withdraw.StatusFailed
 	default:
-		return def.StatusPending // or handle error
+		return withdraw.StatusPending // or handle error
 	}
 }
 
@@ -48,8 +50,8 @@ type GRPCHandler struct {
 func (grpc *GRPCHandler) CreateBalance(ctx context.Context, in *pb.CreateBalanceRequest) (*pb.CreatedResponse, error) {
 	balance, errCreate := grpc.paystoreClient.CreateBalance(in.ExternalID, in.Currency, in.OrganizationSlug)
 	if errCreate != nil {
-		if errCreate == def.OrganizationNotFound {
-			return nil, def.OrganizationNotFound
+		if errCreate == organization.OrganizationNotFound {
+			return nil, organization.OrganizationNotFound
 		}
 		return nil, errCreate
 	}

@@ -4,15 +4,14 @@ import (
 	"database/sql"
 	"github.com/21strive/redifu"
 	"github.com/redis/go-redis/v9"
-	"paystore/lib/model"
 	"time"
 )
 
 type Repository struct {
-	base *redifu.Base[*model.Pin]
+	base *redifu.Base[*Pin]
 }
 
-func (r *Repository) Create(tx sql.Tx, pin *model.Pin) error {
+func (r *Repository) Create(tx sql.Tx, pin *Pin) error {
 	query := `INSERT INTO pin (uuid, randid, created_at, updated_at, pin, balance_uuid) VALUES ($1, $2, $3, $4, $5, $6)`
 	_, err := tx.Exec(query, pin.GetUUID(), pin.GetRandId(), pin.GetCreatedAt(), pin.GetUpdatedAt(), pin.PIN, pin.BalanceUUID)
 	if err != nil {
@@ -27,7 +26,7 @@ func (r *Repository) Create(tx sql.Tx, pin *model.Pin) error {
 	return nil
 }
 
-func (r *Repository) Update(tx sql.Tx, pin *model.Pin) error {
+func (r *Repository) Update(tx sql.Tx, pin *Pin) error {
 	query := `UPDATE pin SET updated_at = $1, pin = $2 WHERE uuid = $3`
 	_, errExec := tx.Exec(query, pin.GetUpdatedAt(), pin.PIN, pin.GetUUID())
 	if errExec != nil {
@@ -38,7 +37,7 @@ func (r *Repository) Update(tx sql.Tx, pin *model.Pin) error {
 }
 
 func NewPINRepository(redis redis.UniversalClient, recordAge time.Duration) *Repository {
-	base := redifu.NewBase[*model.Pin](redis, "pin:%s", recordAge)
+	base := redifu.NewBase[*Pin](redis, "pin:%s", recordAge)
 	return &Repository{
 		base: base,
 	}

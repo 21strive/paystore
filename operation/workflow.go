@@ -5,8 +5,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"paystore/config"
 	"paystore/lib/balance"
-	"paystore/lib/def"
-	"paystore/lib/model"
 	"paystore/lib/organization"
 	"paystore/lib/payment"
 	"paystore/lib/transaction"
@@ -26,13 +24,14 @@ type PaystoreClient struct {
 	withdrawRepository     withdraw.RepositoryClient
 }
 
-func (ps *PaystoreClient) CreateBalance(externalID string, currency string, organizationSlug string) (*model.Balance, error) {
+func (ps *PaystoreClient) CreateBalance(externalID string,
+	currency string, organizationSlug string) (*balance.Balance, error) {
 	organizationFromDB, errFind := ps.organizationRepository.FindBySlug(organizationSlug)
 	if errFind != nil {
 		return nil, errFind
 	}
 
-	newBalance := model.NewBalance()
+	newBalance := balance.NewBalance()
 	newBalance.OrganizationUUID = organizationFromDB.GetUUID()
 	newBalance.Currency = currency
 	newBalance.ExternalID = externalID
@@ -46,7 +45,8 @@ func (ps *PaystoreClient) CreateBalance(externalID string, currency string, orga
 	return newBalance, nil
 }
 
-func (ps *PaystoreClient) CreatePayment(accountUUID string, amount int64, vendorRecordID string) (*model.Payment, error) {
+func (ps *PaystoreClient) CreatePayment(accountUUID string,
+	amount int64, vendorRecordID string) (*payment.Payment, error) {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return nil, errFind
@@ -57,14 +57,21 @@ func (ps *PaystoreClient) CreatePayment(accountUUID string, amount int64, vendor
 		return nil, errFind
 	}
 
-	newPayment := model.NewPayment()
-	newPayment.Amount = amount
-	newPayment.VendorRecordID = vendorRecordID
-	newPayment.BalanceUUID = balanceFromDB.GetUUID()
+	previousPayment, errFind := ps.paymentRepository.FindLatestPayment(balanceFromDB)
+	if errFind != nil {
+		return nil, errFind
+	}
+
+	newPayment := payment.NewPayment()
+	newPayment.SetBalance(balanceFromDB)
+	newPayment.SetAmount(amount, balanceFromDB.Balance, organizationFromDB)
+	newPayment.SetVendorRecord(vendorRecordID)
+	newPayment.GenerateHash(previousPayment)
+
 	newPayment.OrganizationUUID = organizationFromDB.GetUUID()
 
-	newTranscation := model.NewTransaction()
-	newTranscation.SetType(def.TypePayment)
+	newTranscation := transaction.NewTransaction()
+	newTranscation.SetType(transaction.TypePayment)
 	newTranscation.SetRecord(newPayment)
 	newTranscation.SetBalance(balanceFromDB)
 
@@ -92,7 +99,8 @@ func (ps *PaystoreClient) CreatePayment(accountUUID string, amount int64, vendor
 	return newPayment, nil
 }
 
-func (ps *PaystoreClient) FinalizedPayment(accountUUID string, paymentUUID string, paymentStatus def.PaymentStatus) error {
+func (ps *PaystoreClient) FinalizedPayment(accountUUID string,
+	paymentUUID string, paymentStatus payment.PaymentStatus) error {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return errFind
@@ -104,9 +112,9 @@ func (ps *PaystoreClient) FinalizedPayment(accountUUID string, paymentUUID strin
 	}
 
 	updateBalance := false
-	if paymentStatus == def.PaymentStatusFailed {
+	if paymentStatus == payment.PaymentStatusFailed {
 		paymentFromDB.SetFailed()
-	} else if paymentStatus == def.PaymentStatusPaid {
+	} else if paymentStatus == payment.PaymentStatusPaid {
 		paymentFromDB.SetPaid()
 		balanceFromDB.LastReceive = paymentFromDB.GetCreatedAt()
 		balanceFromDB.Collect(paymentFromDB.Amount)
@@ -139,7 +147,8 @@ func (ps *PaystoreClient) FinalizedPayment(accountUUID string, paymentUUID strin
 	return nil
 }
 
-func (ps *PaystoreClient) CreateWithdraw(accountUUID string, amount int64, vendorRecordID string) (*model.Withdraw, error) {
+func (ps *PaystoreClient) CreateWithdraw(accountUUID string,
+	amount int64, vendorRecordID string) (*withdraw.Withdraw, error) {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return nil, errFind
@@ -151,17 +160,17 @@ func (ps *PaystoreClient) CreateWithdraw(accountUUID string, amount int64, vendo
 	}
 
 	if balanceFromDB.Balance < amount {
-		return nil, def.InsufficientFunds
+		return nil, balance.InsufficientFunds
 	}
 
-	newWithdraw := model.NewWithdraw()
+	newWithdraw := withdraw.NewWithdraw()
 	newWithdraw.SetBalance(balanceFromDB)
 	newWithdraw.SetAmount(amount, balanceFromDB.Balance)
 	newWithdraw.SetOrganization(organizationFromDB)
 	newWithdraw.SetVendorRecord(vendorRecordID)
 
-	newTransaction := model.NewTransaction()
-	newTransaction.SetType(def.TypeWithdraw)
+	newTransaction := transaction.NewTransaction()
+	newTransaction.SetType(transaction.TypeWithdraw)
 	newTransaction.SetRecord(newWithdraw)
 	newTransaction.SetBalance(balanceFromDB)
 
@@ -189,7 +198,8 @@ func (ps *PaystoreClient) CreateWithdraw(accountUUID string, amount int64, vendo
 	return newWithdraw, nil
 }
 
-func (ps *PaystoreClient) FinalizedWithdraw(accountUUID string, withdrawUUID string, withdrawStatus def.WithdrawStatus) error {
+func (ps *PaystoreClient) FinalizedWithdraw(accountUUID string,
+	withdrawUUID string, withdrawStatus withdraw.WithdrawStatus) error {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return errFind
@@ -201,7 +211,7 @@ func (ps *PaystoreClient) FinalizedWithdraw(accountUUID string, withdrawUUID str
 	}
 
 	updateBalance := false
-	if withdrawStatus == def.StatusFailed {
+	if withdrawStatus == withdraw.StatusFailed {
 		withdrawFromDB.SetFailed()
 	} else {
 		withdrawFromDB.SetSuccess()
@@ -246,7 +256,7 @@ func (psr *PaymentSeeder) ByBalance(subtraction int64, lastRandId string, balanc
 		return errFind
 	}
 	if balanceFromDB == nil {
-		return def.BalanceNotFound
+		return balance.BalanceNotFound
 	}
 
 	return psr.ps.paymentRepository.SeedPartialByBalance(subtraction, lastRandId, balanceFromDB)
@@ -266,7 +276,7 @@ func (psr *WithdrawSeeder) ByBalance(subtraction int64, lastRandId string, balan
 		return errFind
 	}
 	if balanceFromDB == nil {
-		return def.BalanceNotFound
+		return balance.BalanceNotFound
 	}
 
 	return psr.ps.withdrawRepository.SeedPartialByBalance(subtraction, lastRandId, balanceFromDB)
@@ -287,18 +297,20 @@ func New(writeDB *sql.DB, readDB *sql.DB, redis redis.UniversalClient,
 		panic(errInit)
 	}
 	withdrawRepo := withdraw.NewRepository(readDB, redis, config)
+	organizationRepo := organization.NewRepository(writeDB, readDB, redis, config)
 
-	return Client(writeDB, balanceRepo, paymentRepo, transactionRepo, withdrawRepo)
+	return Client(writeDB, balanceRepo, paymentRepo, transactionRepo, withdrawRepo, organizationRepo)
 }
 
 func Client(writeDB *sql.DB, balanceRepository balance.RepositoryClient,
 	paymentRepository payment.RepositoryClient, transactionRepository transaction.RepositoryClient,
-	withdrawRepository withdraw.RepositoryClient) *PaystoreClient {
+	withdrawRepository withdraw.RepositoryClient, organizationRepo organization.RepositoryClient) *PaystoreClient {
 	return &PaystoreClient{
-		writeDB:               writeDB,
-		balanceRepository:     balanceRepository,
-		paymentRepository:     paymentRepository,
-		transactionRepository: transactionRepository,
-		withdrawRepository:    withdrawRepository,
+		writeDB:                writeDB,
+		balanceRepository:      balanceRepository,
+		paymentRepository:      paymentRepository,
+		transactionRepository:  transactionRepository,
+		withdrawRepository:     withdrawRepository,
+		organizationRepository: organizationRepo,
 	}
 }

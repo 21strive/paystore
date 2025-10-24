@@ -5,26 +5,27 @@ import (
 	"github.com/21strive/redifu"
 	"github.com/redis/go-redis/v9"
 	"paystore/config"
-	"paystore/lib/def"
-	"paystore/lib/helper"
-	"paystore/lib/model"
+	"paystore/lib/balance"
+	"paystore/lib/builder"
+	"paystore/lib/organization"
+	"paystore/lib/transaction"
 	vendorModel "paystore/user"
 )
 
-var firstPartSelectQuery = `SELECT w.uuid, w.randid, w.created_at, w.updated_at, w.amount, w.balance_before_payment, w.balance_after_payment, w.balance_uuid, w.organization_uuid, w.vendor_record_id, w.status, w.hash`
-var findWithdrawByUUIDQuery = firstPartSelectQuery + `FROM withdraw w WHERE w.uuid = $1;`
+var firstPartSelectQuery = `SELECT w.uuid, w.randid, w.created_at, w.updated_at, w.amount, w.balance_before_withdraw, w.balance_after_withdraw, w.balance_uuid, w.organization_uuid, w.vendor_record_id, w.status, w.hash`
+var findWithdrawByUUIDQuery = firstPartSelectQuery + ` FROM withdraw w WHERE w.uuid = $1;`
 
 type RepositoryClient interface {
-	Create(tx *sql.Tx, withdraw *model.Withdraw, balance *model.Balance, organization *model.Organization) error
-	Update(tx *sql.Tx, withdraw *model.Withdraw) error
-	FindByUUID(uuid string) (*model.Withdraw, error)
-	SeedPartialByBalance(subtraction int64, lastRandId string, balance *model.Balance) error
+	Create(tx *sql.Tx, withdraw *Withdraw, balance *balance.Balance, organization *organization.Organization) error
+	Update(tx *sql.Tx, withdraw *Withdraw) error
+	FindByUUID(uuid string) (*Withdraw, error)
+	SeedPartialByBalance(subtraction int64, lastRandId string, balance *balance.Balance) error
 }
 
 type Repository struct {
-	base                    *redifu.Base[*model.Withdraw]
-	timelineByBalance       *redifu.Timeline[*model.Withdraw]
-	timelineSeederByBalance *redifu.TimelineSeeder[*model.Withdraw]
+	base                    *redifu.Base[*Withdraw]
+	timelineByBalance       *redifu.Timeline[*Withdraw]
+	timelineSeederByBalance *redifu.TimelineSeeder[*Withdraw]
 	findWithdrawByUUIDStmt  *sql.Stmt
 	AppConfig               *config.App
 }
@@ -33,8 +34,8 @@ func (r *Repository) Close() {
 	r.findWithdrawByUUIDStmt.Close()
 }
 
-func (r *Repository) Create(tx *sql.Tx, withdraw *model.Withdraw, balance *model.Balance,
-	organization *model.Organization) error {
+func (r *Repository) Create(tx *sql.Tx, withdraw *Withdraw, balance *balance.Balance,
+	organization *organization.Organization) error {
 	query := `
 		INSERT INTO withdraw (uuid, randid, created_at, updated_at, amount, balance_before_payment, 
 		balance_after_payment, balance_uuid, organization_uuid, vendor_record_id, status, hash) 
@@ -56,7 +57,7 @@ func (r *Repository) Create(tx *sql.Tx, withdraw *model.Withdraw, balance *model
 	return nil
 }
 
-func (r *Repository) Update(tx *sql.Tx, withdraw *model.Withdraw) error {
+func (r *Repository) Update(tx *sql.Tx, withdraw *Withdraw) error {
 	query := `UPDATE withdraw SET updated_at = $1, status = $2, hash = $3 WHERE uuid = $4`
 	_, errExec := tx.Exec(query, withdraw.GetUpdatedAt(), withdraw.Status, withdraw.Hash, withdraw.GetUUID())
 	if errExec != nil {
@@ -66,11 +67,11 @@ func (r *Repository) Update(tx *sql.Tx, withdraw *model.Withdraw) error {
 	return r.base.Set(withdraw)
 }
 
-func (r *Repository) FindByUUID(uuid string) (*model.Withdraw, error) {
+func (r *Repository) FindByUUID(uuid string) (*Withdraw, error) {
 	withdraw, err := WithdrawRowScanner(r.findWithdrawByUUIDStmt.QueryRow(uuid))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, def.WithdrawNotFound
+			return nil, WithdrawNotFound
 		}
 		return nil, err
 	}
@@ -78,8 +79,8 @@ func (r *Repository) FindByUUID(uuid string) (*model.Withdraw, error) {
 	return withdraw, nil
 }
 
-func (r *Repository) SeedPartialByBalance(subtraction int64, lastRandId string, balance *model.Balance) error {
-	joinedQuery := helper.JoinBuilder(firstPartSelectQuery, def.TypeWithdraw, r.AppConfig)
+func (r *Repository) SeedPartialByBalance(subtraction int64, lastRandId string, balance *balance.Balance) error {
+	joinedQuery := builder.JoinBuilder(firstPartSelectQuery, transaction.TypeWithdraw, r.AppConfig)
 
 	rowQuery := joinedQuery + " WHERE w.randid = $1"
 	firstPageQuery := joinedQuery + " WHERE w.balance_uuid = $1 ORDER BY created_at DESC"
@@ -90,14 +91,14 @@ func (r *Repository) SeedPartialByBalance(subtraction int64, lastRandId string, 
 		[]interface{}{balance.GetUUID()}, subtraction, lastRandId, []string{balance.GetRandId()})
 }
 
-func WithdrawRowScanner(row *sql.Row) (*model.Withdraw, error) {
-	withdraw := model.NewWithdraw()
+func WithdrawRowScanner(row *sql.Row) (*Withdraw, error) {
+	withdraw := NewWithdraw()
 	err := row.Scan(withdraw.ScanDestinations()...)
 	return withdraw, err
 }
 
-func WithdrawRowsScanner(rows *sql.Rows, relation map[string]redifu.Relation) (*model.Withdraw, error) {
-	withdraw := model.NewWithdraw()
+func WithdrawRowsScanner(rows *sql.Rows, relation map[string]redifu.Relation) (*Withdraw, error) {
+	withdraw := NewWithdraw()
 	withdrawVendor := vendorModel.NewWithdrawVendor()
 
 	var scanDestinations []interface{}
@@ -120,10 +121,10 @@ func WithdrawRowsScanner(rows *sql.Rows, relation map[string]redifu.Relation) (*
 }
 
 func NewRepository(readDB *sql.DB, redis redis.UniversalClient, config *config.App) *Repository {
-	base := redifu.NewBase[*model.Withdraw](redis, "withdraw:%s", config.RecordAge)
-	timelineByBalance := redifu.NewTimeline[*model.Withdraw](redis, base,
+	base := redifu.NewBase[*Withdraw](redis, "withdraw:%s", config.RecordAge)
+	timelineByBalance := redifu.NewTimeline[*Withdraw](redis, base,
 		"withdraw:organization:%s:balance:%s", config.ItemPerPage, redifu.Descending, config.PaginationAge)
-	timelineSeederByBalance := redifu.NewTimelineSeeder[*model.Withdraw](nil, base, timelineByBalance)
+	timelineSeederByBalance := redifu.NewTimelineSeeder[*Withdraw](nil, base, timelineByBalance)
 
 	findWithdrawByUUIDStmt, err := readDB.Prepare(findWithdrawByUUIDQuery)
 	if err != nil {

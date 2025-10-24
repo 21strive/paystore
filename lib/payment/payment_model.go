@@ -1,11 +1,12 @@
-package model
+package payment
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"github.com/21strive/redifu"
-	"paystore/lib/def"
+	"paystore/lib/balance"
+	"paystore/lib/organization"
 	"paystore/user"
 	"time"
 )
@@ -13,42 +14,57 @@ import (
 type Payment struct {
 	*redifu.Record
 	Amount               int64              `json:"amount"`
+	Fees                 int64              `json:"fees"`
 	BalanceBeforePayment int64              `json:"balanceBeforePayment"`
 	BalanceAfterPayment  int64              `json:"balanceAfterPayment"`
 	BalanceUUID          string             `json:"BalanceUUID"`
 	OrganizationUUID     string             `json:"organizationUUID"`
 	VendorRecordID       string             `json:"vendorRecordID"`
-	Status               def.PaymentStatus  `json:"status"`
+	Status               PaymentStatus      `json:"status"`
 	Hash                 string             `json:"hash"`
 	PaymentVendorRandId  string             `json:"vendorRandId,omitempty"`
 	PaymentVendor        user.PaymentVendor `json:"vendor,omitempty"`
 }
 
 type PaymentHashPayload struct {
-	UUID                 string            `json:"uuid"`
-	RandId               string            `json:"randid"`
-	CreatedAt            time.Time         `json:"createdAt"`
-	Amount               int64             `json:"amount"`
-	BalanceBeforePayment int64             `json:"balanceBeforePayment"`
-	BalanceAfterPayment  int64             `json:"balanceAfterPayment"`
-	BalanceUUID          string            `json:"balanceUUID"`
-	OrganizationUUID     string            `json:"organizationUUID"`
-	VendorRecordID       string            `json:"vendorRecordID"`
-	Status               def.PaymentStatus `json:"status"`
-	PreviousPaymentHash  string            `json:"previousPaymentHash"`
+	UUID                 string        `json:"uuid"`
+	RandId               string        `json:"randid"`
+	CreatedAt            time.Time     `json:"createdAt"`
+	Amount               int64         `json:"amount"`
+	Fees                 int64         `json:"fees"`
+	BalanceBeforePayment int64         `json:"balanceBeforePayment"`
+	BalanceAfterPayment  int64         `json:"balanceAfterPayment"`
+	BalanceUUID          string        `json:"balanceUUID"`
+	OrganizationUUID     string        `json:"organizationUUID"`
+	VendorRecordID       string        `json:"vendorRecordID"`
+	Status               PaymentStatus `json:"status"`
+	PreviousPaymentHash  string        `json:"previousPaymentHash"`
 }
 
-func (p *Payment) SetBalance(balance *Balance) {
+func (p *Payment) SetBalance(balance *balance.Balance) {
 	p.BalanceUUID = balance.UUID
 }
 
-func (p *Payment) SetAmount(amount int64, currentBalanceAmount int64) {
-	p.Amount = amount
+func (p *Payment) SetAmount(amount int64,
+	currentBalanceAmount int64, assignedOrganization *organization.Organization) error {
+	if assignedOrganization.FeesType == organization.Percent {
+		p.Amount = amount
+		p.Fees = amount * assignedOrganization.FeesConstant / 100 // 1 is the smallest fees amount
+	}
+	if assignedOrganization.FeesType == organization.Fixed {
+		if amount < assignedOrganization.FeesConstant {
+			return FinalAmountLessThanZero
+		}
+		p.Amount = amount - assignedOrganization.FeesConstant
+		p.Fees = assignedOrganization.FeesConstant
+	}
+
 	p.BalanceBeforePayment = currentBalanceAmount
 	p.BalanceAfterPayment = p.BalanceBeforePayment + p.Amount
+	return nil
 }
 
-func (p *Payment) SetOrganization(organization Organization) {
+func (p *Payment) SetOrganization(organization organization.Organization) {
 	p.OrganizationUUID = organization.UUID
 }
 
@@ -124,17 +140,17 @@ func (p *Payment) ScanDestinations() []interface{} {
 }
 
 func (p *Payment) SetPaid() {
-	p.Status = def.PaymentStatusPaid
+	p.Status = PaymentStatusPaid
 }
 
 func (p *Payment) SetFailed() {
-	p.Status = def.PaymentStatusFailed
+	p.Status = PaymentStatusFailed
 }
 
 func NewPayment() *Payment {
 	payment := &Payment{}
 	redifu.InitRecord(payment)
-	payment.Status = def.PaymentStatusPending
+	payment.Status = PaymentStatusPending
 	return payment
 }
 

@@ -1,9 +1,10 @@
-package paystore
+package main
 
 import (
 	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"paystore/lib/helper"
 	"paystore/operation"
 	pb "paystore/protos"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -32,6 +35,7 @@ func main() {
 	grpcServer := grpc.NewServer()
 	grpcHandler := operation.NewGRPCHandler(paystoreClient)
 	pb.RegisterPaystoreServer(grpcServer, grpcHandler)
+	reflection.Register(grpcServer)
 
 	port := os.Getenv("GRPC_PORT")
 	if port == "" {
