@@ -45,8 +45,7 @@ func (ps *PaystoreClient) CreateBalance(externalID string,
 	return newBalance, nil
 }
 
-func (ps *PaystoreClient) CreatePayment(accountUUID string,
-	amount int64, vendorRecordID string) (*payment.Payment, error) {
+func (ps *PaystoreClient) CreatePayment(accountUUID string, amount int64) (*payment.Payment, error) {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return nil, errFind
@@ -65,7 +64,6 @@ func (ps *PaystoreClient) CreatePayment(accountUUID string,
 	newPayment := payment.NewPayment()
 	newPayment.SetBalance(balanceFromDB)
 	newPayment.SetAmount(amount, balanceFromDB.Balance, organizationFromDB)
-	newPayment.SetVendorRecord(vendorRecordID)
 	newPayment.GenerateHash(previousPayment)
 
 	newPayment.OrganizationUUID = organizationFromDB.GetUUID()
@@ -100,7 +98,7 @@ func (ps *PaystoreClient) CreatePayment(accountUUID string,
 }
 
 func (ps *PaystoreClient) FinalizedPayment(accountUUID string,
-	paymentUUID string, paymentStatus payment.PaymentStatus) error {
+	paymentUUID string, paymentStatus payment.PaymentStatus, vendorRecordID string) error {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return errFind
@@ -116,6 +114,7 @@ func (ps *PaystoreClient) FinalizedPayment(accountUUID string,
 		paymentFromDB.SetFailed()
 	} else if paymentStatus == payment.PaymentStatusPaid {
 		paymentFromDB.SetPaid()
+		paymentFromDB.SetVendorRecord(vendorRecordID)
 		balanceFromDB.LastReceive = paymentFromDB.GetCreatedAt()
 		balanceFromDB.Collect(paymentFromDB.Amount)
 		updateBalance = true
@@ -147,8 +146,7 @@ func (ps *PaystoreClient) FinalizedPayment(accountUUID string,
 	return nil
 }
 
-func (ps *PaystoreClient) CreateWithdraw(accountUUID string,
-	amount int64, vendorRecordID string) (*withdraw.Withdraw, error) {
+func (ps *PaystoreClient) CreateWithdraw(accountUUID string, amount int64) (*withdraw.Withdraw, error) {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return nil, errFind
@@ -167,7 +165,6 @@ func (ps *PaystoreClient) CreateWithdraw(accountUUID string,
 	newWithdraw.SetBalance(balanceFromDB)
 	newWithdraw.SetAmount(amount, balanceFromDB.Balance)
 	newWithdraw.SetOrganization(organizationFromDB)
-	newWithdraw.SetVendorRecord(vendorRecordID)
 
 	newTransaction := transaction.NewTransaction()
 	newTransaction.SetType(transaction.TypeWithdraw)
@@ -199,7 +196,7 @@ func (ps *PaystoreClient) CreateWithdraw(accountUUID string,
 }
 
 func (ps *PaystoreClient) FinalizedWithdraw(accountUUID string,
-	withdrawUUID string, withdrawStatus withdraw.WithdrawStatus) error {
+	withdrawUUID string, withdrawStatus withdraw.WithdrawStatus, vendorRecordID string) error {
 	balanceFromDB, errFind := ps.balanceRepository.FindByUUID(accountUUID)
 	if errFind != nil {
 		return errFind
@@ -215,6 +212,7 @@ func (ps *PaystoreClient) FinalizedWithdraw(accountUUID string,
 		withdrawFromDB.SetFailed()
 	} else {
 		withdrawFromDB.SetSuccess()
+		withdrawFromDB.SetVendorRecord(vendorRecordID)
 		balanceFromDB.LastWithdraw = withdrawFromDB.GetCreatedAt()
 		balanceFromDB.Withdraw(withdrawFromDB.Amount)
 		updateBalance = true

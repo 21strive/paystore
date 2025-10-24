@@ -21,25 +21,25 @@ message CreateBalanceRequest {
 message CreatePaymentRequest {
   string AccountUUID = 1;
   int64 Amount = 2;
-  string VendorRecordId = 3;
 }
 
 message FinalizedPaymentRequest {
   string AccountUUID = 1;
   string PaymentUUID = 2;
-  PaymentStatus PaymentStatus = 3;
+  string VendorRecordId = 3;
+  PaymentStatus PaymentStatus = 4;
 }
 
 message CreateWithdrawRequest {
   string AccountUUID = 1;
   int64 Amount = 2;
-  string VendorRecordId = 3;
 }
 
 message FinalizedWithdrawRequest {
   string AccountUUId = 1;
   string WithdrawUUID = 2;
-  PaymentStatus WithdrawStatus = 3;
+  string VendorRecordId = 3;
+  PaymentStatus WithdrawStatus = 4;
 }
 
 message CreatedResponse {

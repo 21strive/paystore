@@ -60,7 +60,7 @@ func (grpc *GRPCHandler) CreateBalance(ctx context.Context, in *pb.CreateBalance
 }
 
 func (grpc *GRPCHandler) CreatePayment(ctx context.Context, in *pb.CreatePaymentRequest) (*pb.CreatedResponse, error) {
-	payment, errCreate := grpc.paystoreClient.CreatePayment(in.AccountUUID, in.Amount, in.VendorRecordId)
+	payment, errCreate := grpc.paystoreClient.CreatePayment(in.AccountUUID, in.Amount)
 	if errCreate != nil {
 		return nil, errCreate
 	}
@@ -69,7 +69,7 @@ func (grpc *GRPCHandler) CreatePayment(ctx context.Context, in *pb.CreatePayment
 }
 
 func (grpc *GRPCHandler) FinalizedPayment(ctx context.Context, in *pb.FinalizedPaymentRequest) (*pb.EmptyResponse, error) {
-	errFinalized := grpc.paystoreClient.FinalizedPayment(in.AccountUUID, in.PaymentUUID, pbToGoPaymentStatus(in.PaymentStatus))
+	errFinalized := grpc.paystoreClient.FinalizedPayment(in.AccountUUID, in.PaymentUUID, pbToGoPaymentStatus(in.PaymentStatus), in.VendorRecordId)
 	if errFinalized != nil {
 		return nil, errFinalized
 	}
@@ -78,7 +78,7 @@ func (grpc *GRPCHandler) FinalizedPayment(ctx context.Context, in *pb.FinalizedP
 }
 
 func (grpc *GRPCHandler) CreateWithdraw(ctx context.Context, in *pb.CreateWithdrawRequest) (*pb.CreatedResponse, error) {
-	withdraw, errCreate := grpc.paystoreClient.CreateWithdraw(in.AccountUUID, in.Amount, in.VendorRecordId)
+	withdraw, errCreate := grpc.paystoreClient.CreateWithdraw(in.AccountUUID, in.Amount)
 	if errCreate != nil {
 		return nil, errCreate
 	}
@@ -87,7 +87,7 @@ func (grpc *GRPCHandler) CreateWithdraw(ctx context.Context, in *pb.CreateWithdr
 }
 
 func (grpc *GRPCHandler) FinalizedWithdraw(ctx context.Context, in *pb.FinalizedWithdrawRequest) (*pb.EmptyResponse, error) {
-	errFinalized := grpc.paystoreClient.FinalizedWithdraw(in.WithdrawUUID, in.WithdrawUUID, pbToGoWithdrawStatus(in.WithdrawStatus))
+	errFinalized := grpc.paystoreClient.FinalizedWithdraw(in.WithdrawUUID, in.WithdrawUUID, pbToGoWithdrawStatus(in.WithdrawStatus), in.VendorRecordId)
 	if errFinalized != nil {
 		return nil, errFinalized
 	}
