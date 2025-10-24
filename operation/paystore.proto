@@ -32,7 +32,7 @@ message FinalizedPaymentRequest {
 
 message CreateWithdrawRequest {
   string AccountUUID = 1;
-  int64 amount = 2;
+  int64 Amount = 2;
   string VendorRecordId = 3;
 }
 

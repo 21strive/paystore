@@ -256,7 +256,7 @@ func (x *FinalizedPaymentRequest) GetPaymentStatus() PaymentStatus {
 type CreateWithdrawRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	AccountUUID    string                 `protobuf:"bytes,1,opt,name=AccountUUID,proto3" json:"AccountUUID,omitempty"`
-	Amount         int64                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	Amount         int64                  `protobuf:"varint,2,opt,name=Amount,proto3" json:"Amount,omitempty"`
 	VendorRecordId string                 `protobuf:"bytes,3,opt,name=VendorRecordId,proto3" json:"VendorRecordId,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -474,7 +474,7 @@ const file_operation_paystore_proto_rawDesc = "" +
 	"\rPaymentStatus\x18\x03 \x01(\x0e2\x17.paystore.PaymentStatusR\rPaymentStatus\"y\n" +
 	"\x15CreateWithdrawRequest\x12 \n" +
 	"\vAccountUUID\x18\x01 \x01(\tR\vAccountUUID\x12\x16\n" +
-	"\x06amount\x18\x02 \x01(\x03R\x06amount\x12&\n" +
+	"\x06Amount\x18\x02 \x01(\x03R\x06Amount\x12&\n" +
 	"\x0eVendorRecordId\x18\x03 \x01(\tR\x0eVendorRecordId\"\xa1\x01\n" +
 	"\x18FinalizedWithdrawRequest\x12 \n" +
 	"\vAccountUUId\x18\x01 \x01(\tR\vAccountUUId\x12\"\n" +
