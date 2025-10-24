@@ -1,12 +1,16 @@
 package paystore
 
 import (
+	"fmt"
 	"github.com/gofiber/fiber/v2"
+	"google.golang.org/grpc"
+	"log"
+	"net"
 	"os"
 	"paystore/config"
-	"paystore/fetch"
 	"paystore/lib/helper"
 	"paystore/operation"
+	pb "paystore/protos"
 )
 
 func main() {
@@ -21,15 +25,31 @@ func main() {
 	redis := helper.ConnectRedis(os.Getenv("REDIS_HOST"), os.Getenv("REDIS_USER"),
 		os.Getenv("REDIS_PASS"), false)
 
-	config := config.DefaultConfig(os.Getenv("VENDOR_TABLE_NAME"))
+	config := config.DefaultConfig(os.Getenv("PAYMENT_VENDOR_TABLE_NAME"), os.Getenv("WITHDRAW_VENDOR_TABLE_NAME"))
 
-	client := operation.New(writeDB, readDB, redis, config)
+	// GRPC Setup
+	paystoreClient := operation.New(writeDB, readDB, redis, config)
+	grpcServer := grpc.NewServer()
+	grpcHandler := operation.NewGRPCHandler(paystoreClient)
+	pb.RegisterPaystoreServer(grpcServer, grpcHandler)
+
+	port := os.Getenv("GRPC_PORT")
+	if port == "" {
+		port = "50051"
+	}
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+	if err != nil {
+		log.Fatalf("Failed to listen on port %s: %v", port, err)
+	}
+
+	go func() {
+		log.Printf("gRPC server listening on port %s", port)
+		if err := grpcServer.Serve(listener); err != nil {
+			log.Fatalf("Failed to serve gRPC: %v", err)
+		}
+	}()
 
 	app := fiber.New()
 
 	app.Listen(":" + os.Getenv("PORT"))
-}
-
-type HTTPFetcherHandler struct {
-	paystoreFetcher *fetch.PaystoreFetcher
 }

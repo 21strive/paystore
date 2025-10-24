@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.10
 // 	protoc        v4.25.2
-// source: command/paystore.proto
+// source: operation/paystore.proto
 
 package protos
 
@@ -21,50 +21,56 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type Status int32
+type PaymentStatus int32
 
 const (
-	Status_SUCCES Status = 0
-	Status_FAIL   Status = 1
+	PaymentStatus_PAYMENT_STATUS_UNSPECIFIED PaymentStatus = 0 // Required by protobuf style guide
+	PaymentStatus_PAYMENT_STATUS_PENDING     PaymentStatus = 1
+	PaymentStatus_PAYMENT_STATUS_PAID        PaymentStatus = 2
+	PaymentStatus_PAYMENT_STATUS_FAILED      PaymentStatus = 3
 )
 
-// Enum value maps for Status.
+// Enum value maps for PaymentStatus.
 var (
-	Status_name = map[int32]string{
-		0: "SUCCES",
-		1: "FAIL",
+	PaymentStatus_name = map[int32]string{
+		0: "PAYMENT_STATUS_UNSPECIFIED",
+		1: "PAYMENT_STATUS_PENDING",
+		2: "PAYMENT_STATUS_PAID",
+		3: "PAYMENT_STATUS_FAILED",
 	}
-	Status_value = map[string]int32{
-		"SUCCES": 0,
-		"FAIL":   1,
+	PaymentStatus_value = map[string]int32{
+		"PAYMENT_STATUS_UNSPECIFIED": 0,
+		"PAYMENT_STATUS_PENDING":     1,
+		"PAYMENT_STATUS_PAID":        2,
+		"PAYMENT_STATUS_FAILED":      3,
 	}
 )
 
-func (x Status) Enum() *Status {
-	p := new(Status)
+func (x PaymentStatus) Enum() *PaymentStatus {
+	p := new(PaymentStatus)
 	*p = x
 	return p
 }
 
-func (x Status) String() string {
+func (x PaymentStatus) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_command_paystore_proto_enumTypes[0].Descriptor()
+func (PaymentStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_operation_paystore_proto_enumTypes[0].Descriptor()
 }
 
-func (Status) Type() protoreflect.EnumType {
-	return &file_command_paystore_proto_enumTypes[0]
+func (PaymentStatus) Type() protoreflect.EnumType {
+	return &file_operation_paystore_proto_enumTypes[0]
 }
 
-func (x Status) Number() protoreflect.EnumNumber {
+func (x PaymentStatus) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use Status.Descriptor instead.
-func (Status) EnumDescriptor() ([]byte, []int) {
-	return file_command_paystore_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use PaymentStatus.Descriptor instead.
+func (PaymentStatus) EnumDescriptor() ([]byte, []int) {
+	return file_operation_paystore_proto_rawDescGZIP(), []int{0}
 }
 
 type CreateBalanceRequest struct {
@@ -78,7 +84,7 @@ type CreateBalanceRequest struct {
 
 func (x *CreateBalanceRequest) Reset() {
 	*x = CreateBalanceRequest{}
-	mi := &file_command_paystore_proto_msgTypes[0]
+	mi := &file_operation_paystore_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -90,7 +96,7 @@ func (x *CreateBalanceRequest) String() string {
 func (*CreateBalanceRequest) ProtoMessage() {}
 
 func (x *CreateBalanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_command_paystore_proto_msgTypes[0]
+	mi := &file_operation_paystore_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -103,7 +109,7 @@ func (x *CreateBalanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateBalanceRequest.ProtoReflect.Descriptor instead.
 func (*CreateBalanceRequest) Descriptor() ([]byte, []int) {
-	return file_command_paystore_proto_rawDescGZIP(), []int{0}
+	return file_operation_paystore_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *CreateBalanceRequest) GetExternalID() string {
@@ -128,16 +134,17 @@ func (x *CreateBalanceRequest) GetCurrency() string {
 }
 
 type CreatePaymentRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Amount        string                 `protobuf:"bytes,1,opt,name=Amount,proto3" json:"Amount,omitempty"`
-	AccountUUID   string                 `protobuf:"bytes,2,opt,name=AccountUUID,proto3" json:"AccountUUID,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AccountUUID    string                 `protobuf:"bytes,1,opt,name=AccountUUID,proto3" json:"AccountUUID,omitempty"`
+	Amount         int64                  `protobuf:"varint,2,opt,name=Amount,proto3" json:"Amount,omitempty"`
+	VendorRecordId string                 `protobuf:"bytes,3,opt,name=VendorRecordId,proto3" json:"VendorRecordId,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CreatePaymentRequest) Reset() {
 	*x = CreatePaymentRequest{}
-	mi := &file_command_paystore_proto_msgTypes[1]
+	mi := &file_operation_paystore_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +156,7 @@ func (x *CreatePaymentRequest) String() string {
 func (*CreatePaymentRequest) ProtoMessage() {}
 
 func (x *CreatePaymentRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_command_paystore_proto_msgTypes[1]
+	mi := &file_operation_paystore_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,14 +169,7 @@ func (x *CreatePaymentRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePaymentRequest.ProtoReflect.Descriptor instead.
 func (*CreatePaymentRequest) Descriptor() ([]byte, []int) {
-	return file_command_paystore_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *CreatePaymentRequest) GetAmount() string {
-	if x != nil {
-		return x.Amount
-	}
-	return ""
+	return file_operation_paystore_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CreatePaymentRequest) GetAccountUUID() string {
@@ -179,81 +179,44 @@ func (x *CreatePaymentRequest) GetAccountUUID() string {
 	return ""
 }
 
-type FinalizedPayment struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PaymentID     string                 `protobuf:"bytes,1,opt,name=PaymentID,proto3" json:"PaymentID,omitempty"`
-	Status        Status                 `protobuf:"varint,2,opt,name=status,proto3,enum=paystore.Status" json:"status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *FinalizedPayment) Reset() {
-	*x = FinalizedPayment{}
-	mi := &file_command_paystore_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *FinalizedPayment) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FinalizedPayment) ProtoMessage() {}
-
-func (x *FinalizedPayment) ProtoReflect() protoreflect.Message {
-	mi := &file_command_paystore_proto_msgTypes[2]
+func (x *CreatePaymentRequest) GetAmount() int64 {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
+		return x.Amount
 	}
-	return mi.MessageOf(x)
+	return 0
 }
 
-// Deprecated: Use FinalizedPayment.ProtoReflect.Descriptor instead.
-func (*FinalizedPayment) Descriptor() ([]byte, []int) {
-	return file_command_paystore_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *FinalizedPayment) GetPaymentID() string {
+func (x *CreatePaymentRequest) GetVendorRecordId() string {
 	if x != nil {
-		return x.PaymentID
+		return x.VendorRecordId
 	}
 	return ""
 }
 
-func (x *FinalizedPayment) GetStatus() Status {
-	if x != nil {
-		return x.Status
-	}
-	return Status_SUCCES
-}
-
-type RequestResponse struct {
+type FinalizedPaymentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
-	Status        Status                 `protobuf:"varint,2,opt,name=status,proto3,enum=paystore.Status" json:"status,omitempty"`
+	AccountUUID   string                 `protobuf:"bytes,1,opt,name=AccountUUID,proto3" json:"AccountUUID,omitempty"`
+	PaymentUUID   string                 `protobuf:"bytes,2,opt,name=PaymentUUID,proto3" json:"PaymentUUID,omitempty"`
+	PaymentStatus PaymentStatus          `protobuf:"varint,3,opt,name=PaymentStatus,proto3,enum=paystore.PaymentStatus" json:"PaymentStatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *RequestResponse) Reset() {
-	*x = RequestResponse{}
-	mi := &file_command_paystore_proto_msgTypes[3]
+func (x *FinalizedPaymentRequest) Reset() {
+	*x = FinalizedPaymentRequest{}
+	mi := &file_operation_paystore_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *RequestResponse) String() string {
+func (x *FinalizedPaymentRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*RequestResponse) ProtoMessage() {}
+func (*FinalizedPaymentRequest) ProtoMessage() {}
 
-func (x *RequestResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_command_paystore_proto_msgTypes[3]
+func (x *FinalizedPaymentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_operation_paystore_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -264,110 +227,340 @@ func (x *RequestResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use RequestResponse.ProtoReflect.Descriptor instead.
-func (*RequestResponse) Descriptor() ([]byte, []int) {
-	return file_command_paystore_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use FinalizedPaymentRequest.ProtoReflect.Descriptor instead.
+func (*FinalizedPaymentRequest) Descriptor() ([]byte, []int) {
+	return file_operation_paystore_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *RequestResponse) GetID() string {
+func (x *FinalizedPaymentRequest) GetAccountUUID() string {
+	if x != nil {
+		return x.AccountUUID
+	}
+	return ""
+}
+
+func (x *FinalizedPaymentRequest) GetPaymentUUID() string {
+	if x != nil {
+		return x.PaymentUUID
+	}
+	return ""
+}
+
+func (x *FinalizedPaymentRequest) GetPaymentStatus() PaymentStatus {
+	if x != nil {
+		return x.PaymentStatus
+	}
+	return PaymentStatus_PAYMENT_STATUS_UNSPECIFIED
+}
+
+type CreateWithdrawRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AccountUUID    string                 `protobuf:"bytes,1,opt,name=AccountUUID,proto3" json:"AccountUUID,omitempty"`
+	Amount         int64                  `protobuf:"varint,2,opt,name=amount,proto3" json:"amount,omitempty"`
+	VendorRecordId string                 `protobuf:"bytes,3,opt,name=VendorRecordId,proto3" json:"VendorRecordId,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CreateWithdrawRequest) Reset() {
+	*x = CreateWithdrawRequest{}
+	mi := &file_operation_paystore_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateWithdrawRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateWithdrawRequest) ProtoMessage() {}
+
+func (x *CreateWithdrawRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_operation_paystore_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateWithdrawRequest.ProtoReflect.Descriptor instead.
+func (*CreateWithdrawRequest) Descriptor() ([]byte, []int) {
+	return file_operation_paystore_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CreateWithdrawRequest) GetAccountUUID() string {
+	if x != nil {
+		return x.AccountUUID
+	}
+	return ""
+}
+
+func (x *CreateWithdrawRequest) GetAmount() int64 {
+	if x != nil {
+		return x.Amount
+	}
+	return 0
+}
+
+func (x *CreateWithdrawRequest) GetVendorRecordId() string {
+	if x != nil {
+		return x.VendorRecordId
+	}
+	return ""
+}
+
+type FinalizedWithdrawRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AccountUUId    string                 `protobuf:"bytes,1,opt,name=AccountUUId,proto3" json:"AccountUUId,omitempty"`
+	WithdrawUUID   string                 `protobuf:"bytes,2,opt,name=WithdrawUUID,proto3" json:"WithdrawUUID,omitempty"`
+	WithdrawStatus PaymentStatus          `protobuf:"varint,3,opt,name=WithdrawStatus,proto3,enum=paystore.PaymentStatus" json:"WithdrawStatus,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *FinalizedWithdrawRequest) Reset() {
+	*x = FinalizedWithdrawRequest{}
+	mi := &file_operation_paystore_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FinalizedWithdrawRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FinalizedWithdrawRequest) ProtoMessage() {}
+
+func (x *FinalizedWithdrawRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_operation_paystore_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FinalizedWithdrawRequest.ProtoReflect.Descriptor instead.
+func (*FinalizedWithdrawRequest) Descriptor() ([]byte, []int) {
+	return file_operation_paystore_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *FinalizedWithdrawRequest) GetAccountUUId() string {
+	if x != nil {
+		return x.AccountUUId
+	}
+	return ""
+}
+
+func (x *FinalizedWithdrawRequest) GetWithdrawUUID() string {
+	if x != nil {
+		return x.WithdrawUUID
+	}
+	return ""
+}
+
+func (x *FinalizedWithdrawRequest) GetWithdrawStatus() PaymentStatus {
+	if x != nil {
+		return x.WithdrawStatus
+	}
+	return PaymentStatus_PAYMENT_STATUS_UNSPECIFIED
+}
+
+type CreatedResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ID            string                 `protobuf:"bytes,1,opt,name=ID,proto3" json:"ID,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatedResponse) Reset() {
+	*x = CreatedResponse{}
+	mi := &file_operation_paystore_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatedResponse) ProtoMessage() {}
+
+func (x *CreatedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_operation_paystore_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatedResponse.ProtoReflect.Descriptor instead.
+func (*CreatedResponse) Descriptor() ([]byte, []int) {
+	return file_operation_paystore_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CreatedResponse) GetID() string {
 	if x != nil {
 		return x.ID
 	}
 	return ""
 }
 
-func (x *RequestResponse) GetStatus() Status {
-	if x != nil {
-		return x.Status
-	}
-	return Status_SUCCES
+type EmptyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
-var File_command_paystore_proto protoreflect.FileDescriptor
+func (x *EmptyResponse) Reset() {
+	*x = EmptyResponse{}
+	mi := &file_operation_paystore_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
 
-const file_command_paystore_proto_rawDesc = "" +
+func (x *EmptyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmptyResponse) ProtoMessage() {}
+
+func (x *EmptyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_operation_paystore_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmptyResponse.ProtoReflect.Descriptor instead.
+func (*EmptyResponse) Descriptor() ([]byte, []int) {
+	return file_operation_paystore_proto_rawDescGZIP(), []int{6}
+}
+
+var File_operation_paystore_proto protoreflect.FileDescriptor
+
+const file_operation_paystore_proto_rawDesc = "" +
 	"\n" +
-	"\x16command/paystore.proto\x12\bpaystore\"~\n" +
+	"\x18operation/paystore.proto\x12\bpaystore\"~\n" +
 	"\x14CreateBalanceRequest\x12\x1e\n" +
 	"\n" +
 	"ExternalID\x18\x01 \x01(\tR\n" +
 	"ExternalID\x12*\n" +
 	"\x10OrganizationSlug\x18\x02 \x01(\tR\x10OrganizationSlug\x12\x1a\n" +
-	"\bCurrency\x18\x03 \x01(\tR\bCurrency\"P\n" +
-	"\x14CreatePaymentRequest\x12\x16\n" +
-	"\x06Amount\x18\x01 \x01(\tR\x06Amount\x12 \n" +
-	"\vAccountUUID\x18\x02 \x01(\tR\vAccountUUID\"Z\n" +
-	"\x10FinalizedPayment\x12\x1c\n" +
-	"\tPaymentID\x18\x01 \x01(\tR\tPaymentID\x12(\n" +
-	"\x06status\x18\x02 \x01(\x0e2\x10.paystore.StatusR\x06status\"K\n" +
-	"\x0fRequestResponse\x12\x0e\n" +
-	"\x02ID\x18\x01 \x01(\tR\x02ID\x12(\n" +
-	"\x06status\x18\x02 \x01(\x0e2\x10.paystore.StatusR\x06status*\x1e\n" +
-	"\x06Status\x12\n" +
-	"\n" +
-	"\x06SUCCES\x10\x00\x12\b\n" +
-	"\x04FAIL\x10\x012\xa2\x01\n" +
+	"\bCurrency\x18\x03 \x01(\tR\bCurrency\"x\n" +
+	"\x14CreatePaymentRequest\x12 \n" +
+	"\vAccountUUID\x18\x01 \x01(\tR\vAccountUUID\x12\x16\n" +
+	"\x06Amount\x18\x02 \x01(\x03R\x06Amount\x12&\n" +
+	"\x0eVendorRecordId\x18\x03 \x01(\tR\x0eVendorRecordId\"\x9c\x01\n" +
+	"\x17FinalizedPaymentRequest\x12 \n" +
+	"\vAccountUUID\x18\x01 \x01(\tR\vAccountUUID\x12 \n" +
+	"\vPaymentUUID\x18\x02 \x01(\tR\vPaymentUUID\x12=\n" +
+	"\rPaymentStatus\x18\x03 \x01(\x0e2\x17.paystore.PaymentStatusR\rPaymentStatus\"y\n" +
+	"\x15CreateWithdrawRequest\x12 \n" +
+	"\vAccountUUID\x18\x01 \x01(\tR\vAccountUUID\x12\x16\n" +
+	"\x06amount\x18\x02 \x01(\x03R\x06amount\x12&\n" +
+	"\x0eVendorRecordId\x18\x03 \x01(\tR\x0eVendorRecordId\"\xa1\x01\n" +
+	"\x18FinalizedWithdrawRequest\x12 \n" +
+	"\vAccountUUId\x18\x01 \x01(\tR\vAccountUUId\x12\"\n" +
+	"\fWithdrawUUID\x18\x02 \x01(\tR\fWithdrawUUID\x12?\n" +
+	"\x0eWithdrawStatus\x18\x03 \x01(\x0e2\x17.paystore.PaymentStatusR\x0eWithdrawStatus\"!\n" +
+	"\x0fCreatedResponse\x12\x0e\n" +
+	"\x02ID\x18\x01 \x01(\tR\x02ID\"\x0f\n" +
+	"\rEmptyResponse*\x7f\n" +
+	"\rPaymentStatus\x12\x1e\n" +
+	"\x1aPAYMENT_STATUS_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16PAYMENT_STATUS_PENDING\x10\x01\x12\x17\n" +
+	"\x13PAYMENT_STATUS_PAID\x10\x02\x12\x19\n" +
+	"\x15PAYMENT_STATUS_FAILED\x10\x032\x92\x03\n" +
 	"\bPaystore\x12J\n" +
-	"\rCreateBalance\x12\x1e.paystore.CreateBalanceRequest\x1a\x19.paystore.RequestResponse\x12J\n" +
-	"\rCreatePayment\x12\x1e.paystore.CreatePaymentRequest\x1a\x19.paystore.RequestResponseB\n" +
+	"\rCreateBalance\x12\x1e.paystore.CreateBalanceRequest\x1a\x19.paystore.CreatedResponse\x12J\n" +
+	"\rCreatePayment\x12\x1e.paystore.CreatePaymentRequest\x1a\x19.paystore.CreatedResponse\x12N\n" +
+	"\x10FinalizedPayment\x12!.paystore.FinalizedPaymentRequest\x1a\x17.paystore.EmptyResponse\x12L\n" +
+	"\x0eCreateWithdraw\x12\x1f.paystore.CreateWithdrawRequest\x1a\x19.paystore.CreatedResponse\x12P\n" +
+	"\x11FinalizedWithdraw\x12\".paystore.FinalizedWithdrawRequest\x1a\x17.paystore.EmptyResponseB\n" +
 	"Z\b./protosb\x06proto3"
 
 var (
-	file_command_paystore_proto_rawDescOnce sync.Once
-	file_command_paystore_proto_rawDescData []byte
+	file_operation_paystore_proto_rawDescOnce sync.Once
+	file_operation_paystore_proto_rawDescData []byte
 )
 
-func file_command_paystore_proto_rawDescGZIP() []byte {
-	file_command_paystore_proto_rawDescOnce.Do(func() {
-		file_command_paystore_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_command_paystore_proto_rawDesc), len(file_command_paystore_proto_rawDesc)))
+func file_operation_paystore_proto_rawDescGZIP() []byte {
+	file_operation_paystore_proto_rawDescOnce.Do(func() {
+		file_operation_paystore_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_operation_paystore_proto_rawDesc), len(file_operation_paystore_proto_rawDesc)))
 	})
-	return file_command_paystore_proto_rawDescData
+	return file_operation_paystore_proto_rawDescData
 }
 
-var file_command_paystore_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_command_paystore_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_command_paystore_proto_goTypes = []any{
-	(Status)(0),                  // 0: paystore.Status
-	(*CreateBalanceRequest)(nil), // 1: paystore.CreateBalanceRequest
-	(*CreatePaymentRequest)(nil), // 2: paystore.CreatePaymentRequest
-	(*FinalizedPayment)(nil),     // 3: paystore.FinalizedPayment
-	(*RequestResponse)(nil),      // 4: paystore.RequestResponse
+var file_operation_paystore_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_operation_paystore_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_operation_paystore_proto_goTypes = []any{
+	(PaymentStatus)(0),               // 0: paystore.PaymentStatus
+	(*CreateBalanceRequest)(nil),     // 1: paystore.CreateBalanceRequest
+	(*CreatePaymentRequest)(nil),     // 2: paystore.CreatePaymentRequest
+	(*FinalizedPaymentRequest)(nil),  // 3: paystore.FinalizedPaymentRequest
+	(*CreateWithdrawRequest)(nil),    // 4: paystore.CreateWithdrawRequest
+	(*FinalizedWithdrawRequest)(nil), // 5: paystore.FinalizedWithdrawRequest
+	(*CreatedResponse)(nil),          // 6: paystore.CreatedResponse
+	(*EmptyResponse)(nil),            // 7: paystore.EmptyResponse
 }
-var file_command_paystore_proto_depIdxs = []int32{
-	0, // 0: paystore.FinalizedPayment.status:type_name -> paystore.Status
-	0, // 1: paystore.RequestResponse.status:type_name -> paystore.Status
+var file_operation_paystore_proto_depIdxs = []int32{
+	0, // 0: paystore.FinalizedPaymentRequest.PaymentStatus:type_name -> paystore.PaymentStatus
+	0, // 1: paystore.FinalizedWithdrawRequest.WithdrawStatus:type_name -> paystore.PaymentStatus
 	1, // 2: paystore.Paystore.CreateBalance:input_type -> paystore.CreateBalanceRequest
 	2, // 3: paystore.Paystore.CreatePayment:input_type -> paystore.CreatePaymentRequest
-	4, // 4: paystore.Paystore.CreateBalance:output_type -> paystore.RequestResponse
-	4, // 5: paystore.Paystore.CreatePayment:output_type -> paystore.RequestResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
+	3, // 4: paystore.Paystore.FinalizedPayment:input_type -> paystore.FinalizedPaymentRequest
+	4, // 5: paystore.Paystore.CreateWithdraw:input_type -> paystore.CreateWithdrawRequest
+	5, // 6: paystore.Paystore.FinalizedWithdraw:input_type -> paystore.FinalizedWithdrawRequest
+	6, // 7: paystore.Paystore.CreateBalance:output_type -> paystore.CreatedResponse
+	6, // 8: paystore.Paystore.CreatePayment:output_type -> paystore.CreatedResponse
+	7, // 9: paystore.Paystore.FinalizedPayment:output_type -> paystore.EmptyResponse
+	6, // 10: paystore.Paystore.CreateWithdraw:output_type -> paystore.CreatedResponse
+	7, // 11: paystore.Paystore.FinalizedWithdraw:output_type -> paystore.EmptyResponse
+	7, // [7:12] is the sub-list for method output_type
+	2, // [2:7] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
 	2, // [2:2] is the sub-list for extension extendee
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_command_paystore_proto_init() }
-func file_command_paystore_proto_init() {
-	if File_command_paystore_proto != nil {
+func init() { file_operation_paystore_proto_init() }
+func file_operation_paystore_proto_init() {
+	if File_operation_paystore_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_command_paystore_proto_rawDesc), len(file_command_paystore_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_operation_paystore_proto_rawDesc), len(file_operation_paystore_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_command_paystore_proto_goTypes,
-		DependencyIndexes: file_command_paystore_proto_depIdxs,
-		EnumInfos:         file_command_paystore_proto_enumTypes,
-		MessageInfos:      file_command_paystore_proto_msgTypes,
+		GoTypes:           file_operation_paystore_proto_goTypes,
+		DependencyIndexes: file_operation_paystore_proto_depIdxs,
+		EnumInfos:         file_operation_paystore_proto_enumTypes,
+		MessageInfos:      file_operation_paystore_proto_msgTypes,
 	}.Build()
-	File_command_paystore_proto = out.File
-	file_command_paystore_proto_goTypes = nil
-	file_command_paystore_proto_depIdxs = nil
+	File_operation_paystore_proto = out.File
+	file_operation_paystore_proto_goTypes = nil
+	file_operation_paystore_proto_depIdxs = nil
 }

@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v4.25.2
-// source: command/paystore.proto
+// source: operation/paystore.proto
 
 package protos
 
@@ -19,16 +19,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Paystore_CreateBalance_FullMethodName = "/paystore.Paystore/CreateBalance"
-	Paystore_CreatePayment_FullMethodName = "/paystore.Paystore/CreatePayment"
+	Paystore_CreateBalance_FullMethodName     = "/paystore.Paystore/CreateBalance"
+	Paystore_CreatePayment_FullMethodName     = "/paystore.Paystore/CreatePayment"
+	Paystore_FinalizedPayment_FullMethodName  = "/paystore.Paystore/FinalizedPayment"
+	Paystore_CreateWithdraw_FullMethodName    = "/paystore.Paystore/CreateWithdraw"
+	Paystore_FinalizedWithdraw_FullMethodName = "/paystore.Paystore/FinalizedWithdraw"
 )
 
 // PaystoreClient is the client API for Paystore service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PaystoreClient interface {
-	CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*RequestResponse, error)
-	CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*RequestResponse, error)
+	CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*CreatedResponse, error)
+	CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*CreatedResponse, error)
+	FinalizedPayment(ctx context.Context, in *FinalizedPaymentRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	CreateWithdraw(ctx context.Context, in *CreateWithdrawRequest, opts ...grpc.CallOption) (*CreatedResponse, error)
+	FinalizedWithdraw(ctx context.Context, in *FinalizedWithdrawRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type paystoreClient struct {
@@ -39,9 +45,9 @@ func NewPaystoreClient(cc grpc.ClientConnInterface) PaystoreClient {
 	return &paystoreClient{cc}
 }
 
-func (c *paystoreClient) CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*RequestResponse, error) {
+func (c *paystoreClient) CreateBalance(ctx context.Context, in *CreateBalanceRequest, opts ...grpc.CallOption) (*CreatedResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RequestResponse)
+	out := new(CreatedResponse)
 	err := c.cc.Invoke(ctx, Paystore_CreateBalance_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -49,10 +55,40 @@ func (c *paystoreClient) CreateBalance(ctx context.Context, in *CreateBalanceReq
 	return out, nil
 }
 
-func (c *paystoreClient) CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*RequestResponse, error) {
+func (c *paystoreClient) CreatePayment(ctx context.Context, in *CreatePaymentRequest, opts ...grpc.CallOption) (*CreatedResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RequestResponse)
+	out := new(CreatedResponse)
 	err := c.cc.Invoke(ctx, Paystore_CreatePayment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paystoreClient) FinalizedPayment(ctx context.Context, in *FinalizedPaymentRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Paystore_FinalizedPayment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paystoreClient) CreateWithdraw(ctx context.Context, in *CreateWithdrawRequest, opts ...grpc.CallOption) (*CreatedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreatedResponse)
+	err := c.cc.Invoke(ctx, Paystore_CreateWithdraw_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *paystoreClient) FinalizedWithdraw(ctx context.Context, in *FinalizedWithdrawRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Paystore_FinalizedWithdraw_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +99,11 @@ func (c *paystoreClient) CreatePayment(ctx context.Context, in *CreatePaymentReq
 // All implementations must embed UnimplementedPaystoreServer
 // for forward compatibility.
 type PaystoreServer interface {
-	CreateBalance(context.Context, *CreateBalanceRequest) (*RequestResponse, error)
-	CreatePayment(context.Context, *CreatePaymentRequest) (*RequestResponse, error)
+	CreateBalance(context.Context, *CreateBalanceRequest) (*CreatedResponse, error)
+	CreatePayment(context.Context, *CreatePaymentRequest) (*CreatedResponse, error)
+	FinalizedPayment(context.Context, *FinalizedPaymentRequest) (*EmptyResponse, error)
+	CreateWithdraw(context.Context, *CreateWithdrawRequest) (*CreatedResponse, error)
+	FinalizedWithdraw(context.Context, *FinalizedWithdrawRequest) (*EmptyResponse, error)
 	mustEmbedUnimplementedPaystoreServer()
 }
 
@@ -75,11 +114,20 @@ type PaystoreServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPaystoreServer struct{}
 
-func (UnimplementedPaystoreServer) CreateBalance(context.Context, *CreateBalanceRequest) (*RequestResponse, error) {
+func (UnimplementedPaystoreServer) CreateBalance(context.Context, *CreateBalanceRequest) (*CreatedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBalance not implemented")
 }
-func (UnimplementedPaystoreServer) CreatePayment(context.Context, *CreatePaymentRequest) (*RequestResponse, error) {
+func (UnimplementedPaystoreServer) CreatePayment(context.Context, *CreatePaymentRequest) (*CreatedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePayment not implemented")
+}
+func (UnimplementedPaystoreServer) FinalizedPayment(context.Context, *FinalizedPaymentRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FinalizedPayment not implemented")
+}
+func (UnimplementedPaystoreServer) CreateWithdraw(context.Context, *CreateWithdrawRequest) (*CreatedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateWithdraw not implemented")
+}
+func (UnimplementedPaystoreServer) FinalizedWithdraw(context.Context, *FinalizedWithdrawRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FinalizedWithdraw not implemented")
 }
 func (UnimplementedPaystoreServer) mustEmbedUnimplementedPaystoreServer() {}
 func (UnimplementedPaystoreServer) testEmbeddedByValue()                  {}
@@ -138,6 +186,60 @@ func _Paystore_CreatePayment_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Paystore_FinalizedPayment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FinalizedPaymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaystoreServer).FinalizedPayment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Paystore_FinalizedPayment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaystoreServer).FinalizedPayment(ctx, req.(*FinalizedPaymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Paystore_CreateWithdraw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateWithdrawRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaystoreServer).CreateWithdraw(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Paystore_CreateWithdraw_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaystoreServer).CreateWithdraw(ctx, req.(*CreateWithdrawRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Paystore_FinalizedWithdraw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FinalizedWithdrawRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaystoreServer).FinalizedWithdraw(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Paystore_FinalizedWithdraw_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaystoreServer).FinalizedWithdraw(ctx, req.(*FinalizedWithdrawRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Paystore_ServiceDesc is the grpc.ServiceDesc for Paystore service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -153,7 +255,19 @@ var Paystore_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "CreatePayment",
 			Handler:    _Paystore_CreatePayment_Handler,
 		},
+		{
+			MethodName: "FinalizedPayment",
+			Handler:    _Paystore_FinalizedPayment_Handler,
+		},
+		{
+			MethodName: "CreateWithdraw",
+			Handler:    _Paystore_CreateWithdraw_Handler,
+		},
+		{
+			MethodName: "FinalizedWithdraw",
+			Handler:    _Paystore_FinalizedWithdraw_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "command/paystore.proto",
+	Metadata: "operation/paystore.proto",
 }

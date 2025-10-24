@@ -5,11 +5,11 @@ package paystore;
 option go_package = "./protos";
 
 service Paystore {
-  rpc CreateBalance (CreateBalanceRequest) returns (RequestResponse);
-  rpc CreatePayment (CreatePaymentRequest) returns (RequestResponse);
-  rpc FinalizedPayment (FinalizedPaymentRequest) returns (RequestResponse);
-  rpc CreateWithdraw (CreateWithdrawRequest) returns (RequestResponse);
-  rpc FinalizedWithdraw (FinalizedWithdrawRequest) returns (RequestResponse);
+  rpc CreateBalance (CreateBalanceRequest) returns (CreatedResponse);
+  rpc CreatePayment (CreatePaymentRequest) returns (CreatedResponse);
+  rpc FinalizedPayment (FinalizedPaymentRequest) returns (EmptyResponse);
+  rpc CreateWithdraw (CreateWithdrawRequest) returns (CreatedResponse);
+  rpc FinalizedWithdraw (FinalizedWithdrawRequest) returns (EmptyResponse);
 }
 
 message CreateBalanceRequest {
@@ -20,34 +20,37 @@ message CreateBalanceRequest {
 
 message CreatePaymentRequest {
   string AccountUUID = 1;
-  string Amount = 2;
+  int64 Amount = 2;
   string VendorRecordId = 3;
 }
 
 message FinalizedPaymentRequest {
   string AccountUUID = 1;
   string PaymentUUID = 2;
-  Status PaymentStatus = 3;
+  PaymentStatus PaymentStatus = 3;
 }
 
 message CreateWithdrawRequest {
   string AccountUUID = 1;
-  string amount = 2;
+  int64 amount = 2;
   string VendorRecordId = 3;
 }
 
 message FinalizedWithdrawRequest {
   string AccountUUId = 1;
   string WithdrawUUID = 2;
-  Status WithdrawStatus = 3;
+  PaymentStatus WithdrawStatus = 3;
 }
 
-message RequestResponse {
+message CreatedResponse {
   string ID = 1;
-  Status status = 2;
 }
 
-enum Status {
-  SUCCES = 0;
-  FAIL = 1;
+message EmptyResponse {}
+
+enum PaymentStatus {
+  PAYMENT_STATUS_UNSPECIFIED = 0;  // Required by protobuf style guide
+  PAYMENT_STATUS_PENDING = 1;
+  PAYMENT_STATUS_PAID = 2;
+  PAYMENT_STATUS_FAILED = 3;
 }

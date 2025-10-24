@@ -7,3 +7,6 @@ package fetch
 	- FetchPayment
 	- FetchWithdraw
 */
+type HTTPFetcherHandler struct {
+	paystoreFetcher *PaystoreFetcher
+}
